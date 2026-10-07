@@ -6140,6 +6140,7 @@ if (is_marlin_flavor)
         optgroup->append_single_option_line("machine_load_filament_time", "printer_multimaterial_advanced#filament-load-time");
         optgroup->append_single_option_line("machine_unload_filament_time", "printer_multimaterial_advanced#filament-unload-time");
         optgroup->append_single_option_line("machine_tool_change_time", "printer_multimaterial_advanced#tool-change-time");
+        optgroup->append_single_option_line("tool_change_temprature_wait");
 
         // IDEX/IQEX (IMEX) parallel printing configuration
         optgroup = page->new_optgroup(L("IDEX/IQEX Configuration"), L"param_advanced");

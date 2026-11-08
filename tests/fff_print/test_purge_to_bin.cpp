@@ -36,6 +36,8 @@ DynamicPrintConfig two_filament_config(bool prime_tower)
         { "sparse_infill_filament_id", 2 },
         { "sparse_infill_density",     "20%" },
         { "enable_prime_tower",        prime_tower },
+        { "wipe_tower_x",              10 },  // inside the 200x200 test bed
+        { "wipe_tower_y",              140 }, // (the default y, 220, is not)
         { "ooze_prevention",           1 },
         { "standby_temperature_delta", -5 },
         { "enable_pressure_advance",   "1,1" },

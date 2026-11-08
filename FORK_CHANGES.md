@@ -33,7 +33,9 @@ commits with `git cherry-pick -x`, or re-apply by hand with `(ported from <hash>
 | `port25/sequential-collision` | 4 |
 | `port25/snapmaker-filament-sync` | 5 |
 | `port25/purge-to-bin` | 6, 7 |
-| `port25/docs` | README, this file |
+| `port25/u1-profiles` | 8 (and profile fixes of 6) |
+| `port25/ci-test-pin` | 2 (test repo pin) |
+| `port25/docs` | README, this file, `CLAUDE.md` fork section |
 
 The `fixup!` commits on `port25/u1-m220` and `port25/purge-to-bin` were made after the first merge
 (build and test fixes); they were not squashed because the branches were already merged.
@@ -44,7 +46,8 @@ The `fixup!` commits on `port25/u1-m220` and `port25/purge-to-bin` were made aft
 
 - `src/libslic3r/AppConfig.cpp` — `VERSION_CHECK_URL` →
   `api.github.com/repos/alternativniy/OrcaSlicer-U1-Sync/releases/latest`. `PROFILE_UPDATE_URL` stays on
-  upstream on purpose: system profiles come from upstream.
+  upstream: other vendors' profiles keep coming from upstream. The Snapmaker bundle is kept out of
+  reach by its version instead, see change 8.
 - `src/slic3r/GUI/GUI_App.cpp` `check_new_version_sf()` — the version regex accepts dot-separated
   identifiers with embedded hyphens (`2.5.0-u1-1.0.0`). New in 2.5: upstream appends an updater query
   (installation id, OS info) and may sign it (`X-Orca-Sig`); both are now sent only when the URL is
@@ -61,16 +64,22 @@ The `fixup!` commits on `port25/u1-m220` and `port25/purge-to-bin` were made aft
 checkout named OrcaSlicer; now `${{ github.workspace }}`. It went missing once in a 2.4 merge — grep the
 file for `/__w/` after every upstream merge.
 - Commit: `6795b28c52` (ported from `f98502faef`).
+- `build_orca.yml` CLI tests: `orca-test-repo` is pinned to `4674f68bbc78` (2026-10-26), its state at
+  the v2.5.0 base. The test repo follows upstream main; on the 2.4 base its HEAD broke the fork's CI on
+  version drift (`2d7fb76e6d`). **Re-pin on every new upstream base.** Commit `441e76c043`.
 
 ### 3. Snapmaker U1 speed override restored after the wipe tower purge (2.4 #8)
 
 `WipeTowerWriter2` forces `M220 S100` before purging, but backed up / restored the user's override
 (`M220 B` / `M220 R`) only on Marlin flavors. U1 runs klipper and supports both, so the override was
 reset to 100 % at the first tool change. Gated on the printer model too (`is_snapmaker_u1()`, same check
-as Snapmaker's own Orca fork). `WipeTower.cpp` (type 1) left alone: M220 B/R is compiled out there.
-- `src/libslic3r/GCode/WipeTower2.{hpp,cpp}`; test in `tests/fff_print/test_wipe_tower.cpp` (checks the
-  whole G-code: `M220 R` follows the tower region).
-- Commits: `beea7195ac`, `87efc72060` (ported from `ce17f6a78a`).
+as Snapmaker's own Orca fork; U1 firmware handles `M220 B/R` in `gcode_move.py`).
+- New in 2.5: the type 1 tower (`WipeTower.cpp`) emits `M220 B/R` too (on 2.4 it was compiled out), on
+  Marlin only, so it got the same U1 gate, set on the writer by `set_for_wipe_tower_writer()`.
+- `src/libslic3r/GCode/WipeTower2.{hpp,cpp}`, `WipeTower.{hpp,cpp}`; test in
+  `tests/fff_print/test_wipe_tower.cpp` for both tower types (checks the whole G-code: `M220 R` follows
+  the tower region).
+- Commits: `beea7195ac`, `87efc72060` (ported from `ce17f6a78a`), `0e35c07940` (type 1).
 - Upstream #12782 (unified wipe tower pipeline) would need this re-applied.
 
 ### 4. By-object collision check from upstream main (2.4 #12)
@@ -97,8 +106,8 @@ preset again. User presets saved from a system one never matched.
   `Sidebar::build_filament_ams_list()` stores it in the tray config as `filament_settings_id`, and
   `PresetBundle::sync_ams_list()` takes that preset over its `filament_id` lookup whenever it is
   compatible — also for a tray without a `filament_id`, which otherwise counts as empty. The 2.5 rule
-  that keeps a slot's current user preset sharing the synced preset's `filament_id` applies only when
-  the sync picked a system preset, so it never overrides the agent's pick. The tray's `filament_id`
+  that keeps a slot's current user preset sharing the synced preset's `filament_id` (#16986) skips the
+  presets an agent named (`agent_picks`), and holds as upstream's for everything else. The tray's `filament_id`
   (the match's own, else the type's generic one) only tags the tray, e.g. for change detection.
 - On 2.4 the substitution happened in Plater after the sync; 2.5's sync (mapping, appended colours,
   mixed filaments) breaks the slot ↔ preset index assumption that needed, so it moved into the
@@ -109,8 +118,15 @@ preset again. User presets saved from a system one never matched.
 - Upstream bug fixed on the way: user presets loaded from the cloud inherited the parent's
   `filament_id` only when the cloud sent `"null"`, not when it sent an empty value. `Preset.cpp` now
   inherits on empty too (`4faaaa8faa`). The sync does not depend on it. Candidate for an upstream PR.
-- Commits: `7126c51171` (ported from `c8cf1ab792`, `2628f52da5`), `4faaaa8faa`, `cc14d67a17`. Needs a
-  check on a real U1.
+- Commits: `7126c51171` (ported from `c8cf1ab792`, `2628f52da5`), `4faaaa8faa`, `cc14d67a17`,
+  `6d679a5180`. Checked on a real U1 (2026-11-09).
+- **Fork-only, not for an upstream PR in this form.** Upstream's design (`docs/HLSD/filament_id.md`): the
+  agent hands a `filament_id` to the shared matcher, which resolves it to a root preset; agents are meant
+  to converge on that. SoftFever removed a per-preset (`setting_id`) path in `20388f846d`, and 2.5's
+  Snapmaker agent matches root presets only on purpose. Upstream's answer for user presets: #16986 (keep
+  the slot's user preset for the same filament, in 2.5) and open #16496 (detached user preset with its
+  own id). Upstreamable pieces: the empty cloud `filament_id` fix on its own; the sub-type name hint is
+  what open #15278 does — support that one instead of a duplicate.
 - Conflict watch: upstream #12232, #15145 (+ #15179/#15180/#15183/#15185), #15278, #14760, #15196 touch
   the same code. Reconcile against whichever merges first.
 
@@ -119,8 +135,12 @@ preset again. User presets saved from a system one never matched.
 `OozePrevention::post_toolchange()` always emitted `M109 S<temp> T<n>`. Printer option (Multimaterial →
 Advanced), default `true` = unchanged; `false` → `M104`. The key name keeps Snapmaker Orca's typo on
 purpose, so their profiles and 3MFs load it — don't fix the spelling.
-- `PrintConfig.{hpp,cpp}`, `GCode.cpp`, `Preset.cpp`, `Print.cpp`, `Tab.cpp`; profile
-  `fdm_U1.json` `"tool_change_temprature_wait": "0"`.
+- `PrintConfig.{hpp,cpp}`, `GCode.cpp`, `Preset.cpp`, `Print.cpp`, `Tab.cpp`; profile: `"0"` in the
+  `Snapmaker U1 (0.2/0.4/0.6/0.8 nozzle).json` printers, whose change G-code waits itself (`M109` before
+  `T`, or the purge template at the bin) — as in Snapmaker's own profiles. **Not in `fdm_U1.json`**:
+  `0.4+0.6` inherits from it, has no change G-code and needs the `M109` after the tool change (ooze
+  prevention, standby −150 °C); with the key inherited it started the next tool cold (fixed in `09aaf46eda`;
+  the same bug was on 2.4-u1).
 - Commit: `f9a6c000ba` (cherry-pick of `b643a03e00`).
 
 ### 7. Purge to bin — tool changer purge into the purge bin instead of a prime tower (2.4 #15)
@@ -164,6 +184,28 @@ theirs: idle-time step sizing). Strip the ru `.po` entries. Ship change 6 with i
 Decided against, don't re-research: a 2.5 plugin (no seam inside G-code generation), a tool-change plugin
 seam in 2.5.0, on-printer purge timing (needs Snapmaker/u1-klipper changes that don't get merged).
 
+### 8. The fork owns the Snapmaker profile bundle
+
+2.5.0 turned vendor profile updates on for everyone (upstream #17289, no setting; only stealth mode or a
+`dev` version keep them off). An upstream Snapmaker bundle with a higher version would be offered as a
+configuration update and, if accepted, replace the fork's U1 profiles (purge to bin template, change
+G-code, tool change wait).
+- `Snapmaker.json` `version` is `99.00.00.01`: the app folds a four-part version into
+  `major.minor.(patch*100+build)` and compares that, so major 99 is out of upstream's reach; the rest
+  counts the fork's profile releases. Bump the last component on every fork profile change.
+- **On every upstream merge or sync: diff upstream's `resources/profiles/Snapmaker*` against ours and merge
+  their changes in by hand**, keeping the fork's deltas (changes 6, 7, this section). Last synced with
+  upstream `02.04.00.20` (v2.5.0). The same rule is in `CLAUDE.md`.
+- Fork deltas in the U1 profiles besides 6 and 7 (`09aaf46eda`):
+  - change G-code, print by object: the lift is absolute (`G90`, default `max_print_height`), as in
+    Snapmaker's 20261003 change G-code; upstream's 20260607 sends the absolute height as a relative move.
+  - `0.4+0.6`: `extruder_clearance_height_to_rod` 27.5 / `extruder_clearance_radius` 72.5 like the other U1
+    printers (upstream #15544 measured the rod); it inherited 36 / 65.
+- Not done: `0.4+0.6` is a different profile line on `fdm_U1` (own `PRINT_START`, no change G-code, no Z lift
+  on tool change, generic retraction). Aligning it with the official U1 profiles is a profile design
+  decision, left open.
+- Commits: `09aaf46eda`, `4e99dcbc82`.
+
 ## Deferred — may come back
 
 - **Nozzle picker + Mixed Nozzle Sizes** (2.4 #13, upstream PR #14400, still open). Not ported: the 2.5
@@ -172,9 +214,11 @@ seam in 2.5.0, on-printer purge timing (needs Snapmaker/u1-klipper changes that 
   follow-ups on `release/v2.4-u1` — `a552887dce` (locale-independent diameters, needed for comma-decimal
   UIs), `7d008a8400` (collapsible section, checkmark, fixed grid), `316d6925ff` (ru strings). Until then
   U1 users switch nozzle size via the `Snapmaker U1 (x nozzle)` printer profiles.
-- **U1 filename before slicing** (2.4 follow-up `893d8d4951`). 2.5 has the post-slice half
-  (`PrintStatistics::initial_no_support_tool`). Believed fine; if Export G-code / Send to printer on a U1
-  profile shows a placeholder parser error before slicing, port the `Print::output_filename()` part.
+- **U1 filename before slicing** (2.4 follow-up `893d8d4951`). Not needed on 2.5: upstream #15950 added
+  the post-slice half (`PrintStatistics::initial_no_support_tool`), and Export / Send are only offered
+  after slicing, which includes the G-code export, so `Print::finished()` holds and the real value is
+  used. Checked in the code, not run. If a placeholder parser error ever shows before slicing, port the
+  `Print::output_filename()` part.
 
 ## Taken upstream or dropped in 2.5 (verified, don't re-port)
 
@@ -205,6 +249,9 @@ Re-check before touching the same code (`gh pr view <n> --repo OrcaSlicer/OrcaSl
 - Taken early from `upstream/main`: #14987, #15544, #17217, #17286 (change 4).
 - Deferred: #14400 (nozzle picker).
 - Competing with change 7, don't take: #16934 (purge bucket sized by idle time), open.
-- Same code as change 5, don't take yet: #12232, #15145 (+ stacked PRs), #15278, #14760, #15196.
+- Same code as change 5, don't take yet: #12232, #15145 (+ stacked PRs), #15278 (sub-type in name, same
+  idea as ours), #14760, #15196, #16300 (Snapmaker sync fixes), #16985 (lane_data ids for Snapmaker),
+  #16822 (multi-colour spools), #16477 (`filament_subtype` setting), #16496 (own id for detached user
+  presets — upstream's way for user presets).
 - #12782 unified wipe tower pipeline — would need change 3 re-applied.
 - #13286 abandoned, #13509 obsolete.

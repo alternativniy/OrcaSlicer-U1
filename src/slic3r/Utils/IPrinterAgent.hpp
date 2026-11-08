@@ -462,6 +462,21 @@ public:
     virtual bool fetch_filament_info(std::string dev_id, FilamentSyncMode sync_mode = FilamentSyncMode::pull) { return false; }
 
     /**
+     * Orca(U1): name the exact filament preset the agent matched for one AMS slot.
+     *
+     * The generic resolution in PresetBundle::sync_ams_list() only gets the slot's filament_id and
+     * maps it to a *root* preset (no "inherits") with that id. An agent that found a better match
+     * during fetch_filament_info() (e.g. by vendor, or a user preset that inherits a system one) can
+     * report it here. Sidebar::build_filament_ams_list() passes it on as the slot's
+     * "filament_settings_id", and sync_ams_list() uses it when it is compatible and has the slot's
+     * filament_id.
+     *
+     * @param slot_index AMS lane index, ams_id * 4 + slot_id (AmsTrayData::slot_index).
+     * @return Preset name, or "" when the agent has nothing better than the filament_id (default).
+     */
+    virtual std::string get_refined_filament_preset(int slot_index) const { return std::string(); }
+
+    /**
      * Translate one filament id across the printer boundary.
      *
      * Orca content-addresses every system filament; a printer, its AMS and its vendor cloud

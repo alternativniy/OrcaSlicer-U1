@@ -6153,14 +6153,23 @@ std::map<int, DynamicPrintConfig> Sidebar::build_filament_ams_list(MachineObject
         return std::string();
     };
 
+    // Orca(U1): the agent may know the exact preset for a slot, beyond what its filament_id resolves to
+    // (see IPrinterAgent::get_refined_filament_preset()).
+    const auto printer_agent = agent ? agent->get_printer_agent() : nullptr;
+
     auto list = obj->GetFilaSystem()->GetAmsList();
     for (auto ams : list) {
         int ams_id   = std::stoi(ams.first);
         int extruder = ams.second->GetExtruderId() ? 0 : 0x10000; // Main (first) extruder at right
         for (auto tray : ams.second->GetTrays()) {
             int  slot_id = std::stoi(tray.first);
-            filament_ams_list.emplace(extruder + (ams_id * 4 + slot_id),
-                                      build_tray_config(*tray.second, get_ams_name(ams_id, slot_id), std::to_string(ams_id), std::to_string(slot_id)));
+            DynamicPrintConfig tray_config = build_tray_config(*tray.second, get_ams_name(ams_id, slot_id), std::to_string(ams_id), std::to_string(slot_id));
+            if (printer_agent) {
+                const std::string refined = printer_agent->get_refined_filament_preset(ams_id * 4 + slot_id);
+                if (!refined.empty())
+                    tray_config.set_key_value("filament_settings_id", new ConfigOptionStrings{refined});
+            }
+            filament_ams_list.emplace(extruder + (ams_id * 4 + slot_id), std::move(tray_config));
         }
     }
     return filament_ams_list;

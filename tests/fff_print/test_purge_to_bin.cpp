@@ -1,4 +1,7 @@
 #include <catch2/catch_all.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include "libslic3r/libslic3r.h"
 #include "libslic3r/Config.hpp"
@@ -11,6 +14,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <cmath>
+#include <math.h>
 #include <cstdlib>
 #include <sstream>
 #include <string>

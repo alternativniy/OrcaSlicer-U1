@@ -69,6 +69,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <iomanip>
+#include <locale>
 #include <cstring>
 #include <exception>
 #include <functional>

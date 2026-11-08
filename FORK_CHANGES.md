@@ -102,7 +102,11 @@ preset again. User presets saved from a system one never matched.
 - Files: `SnapmakerPrinterAgent.{hpp,cpp}`, `IPrinterAgent.hpp`, `Plater.cpp`, `PresetBundle.cpp`; test
   "Syncing the AMS takes the preset an agent named for the tray" in
   `tests/libslic3r/test_preset_bundle_loading.cpp`.
-- Commit: `7126c51171` (ported from `c8cf1ab792`, `2628f52da5`). Needs a check on a real U1.
+- Upstream bug fixed on the way (`4faaaa8faa`): user presets loaded from the cloud inherited the parent's
+  `filament_id` only when the cloud sent `"null"`; an empty value left it empty, the tray went downstream
+  without an id and `sync_ams_list()` skipped it — the sync did nothing. `Preset.cpp` now inherits on empty
+  too; the agent and the hint check fall back to the parent's id. Candidate for an upstream PR on its own.
+- Commits: `7126c51171` (ported from `c8cf1ab792`, `2628f52da5`), `4faaaa8faa`. Needs a check on a real U1.
 - Conflict watch: upstream #12232, #15145 (+ #15179/#15180/#15183/#15185), #15278, #14760, #15196 touch
   the same code. Reconcile against whichever merges first.
 

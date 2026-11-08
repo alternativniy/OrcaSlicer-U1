@@ -297,15 +297,16 @@ TEST_CASE("The type2 wipe tower restores the speed override on a Snapmaker U1", 
     config.set_deserialize_strict({ { "wipe_tower_type", "type2" } });
     SECTION("Snapmaker U1") {
         config.set_deserialize_strict({ { "printer_model", "Snapmaker U1" } });
-        const std::string tower = sliced_wipe_tower(config);
-        CHECK_THAT(tower, Catch::Matchers::ContainsSubstring("M220 B"));
-        CHECK_THAT(tower, Catch::Matchers::ContainsSubstring("M220 R"));
+        // The restore follows the tower region, so look at the whole G-code.
+        const std::string gcode = slice_with_prime_tower(config);
+        CHECK_THAT(gcode, Catch::Matchers::ContainsSubstring("M220 B"));
+        CHECK_THAT(gcode, Catch::Matchers::ContainsSubstring("M220 R"));
     }
     SECTION("other klipper printer") {
         config.set_deserialize_strict({ { "printer_model", "Voron 2.4" } });
-        const std::string tower = sliced_wipe_tower(config);
-        CHECK_THAT(tower, !Catch::Matchers::ContainsSubstring("M220 B"));
-        CHECK_THAT(tower, !Catch::Matchers::ContainsSubstring("M220 R"));
+        const std::string gcode = slice_with_prime_tower(config);
+        CHECK_THAT(gcode, !Catch::Matchers::ContainsSubstring("M220 B"));
+        CHECK_THAT(gcode, !Catch::Matchers::ContainsSubstring("M220 R"));
     }
 }
 

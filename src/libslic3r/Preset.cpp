@@ -2706,7 +2706,8 @@ bool PresetCollection::load_user_preset(std::string name, std::map<std::string, 
             // this stays stable. Does not affect the preset's own (cloud) setting_id.
             if (based_id.empty())
                 based_id = inherit_preset->setting_id;
-            if (cloud_filament_id == "null") {
+            // Orca: the cloud may also send an empty filament_id for a preset that never set its own.
+            if (cloud_filament_id == "null" || cloud_filament_id.empty()) {
                 cloud_filament_id = inherit_preset->filament_id;
             }
         }

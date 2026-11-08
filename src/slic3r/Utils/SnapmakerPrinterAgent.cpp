@@ -138,6 +138,16 @@ std::string sub_type_name_hint(const std::string& sub)
 // resolving a filament_id back to a preset: only a *root* preset (no "inherits") is considered,
 // and among those sharing an id the pick is a name-sort tie-break, not necessarily this one. If
 // either holds, the generic resolution cannot be trusted to land back on `match`.
+// A user preset carries its system parent's filament_id; fall back to the parent's when it doesn't (e.g. one
+// loaded from the cloud without it), so the tray never goes downstream without an id.
+std::string effective_filament_id(const PresetCollection& filaments, const Preset& preset)
+{
+    if (!preset.filament_id.empty())
+        return preset.filament_id;
+    const Preset* base = filaments.get_preset_base(preset);
+    return base ? base->filament_id : std::string();
+}
+
 bool generic_resolution_may_miss(const PresetCollection& filaments, const Preset& match)
 {
     if (filaments.get_preset_base(match) != &match)
@@ -283,9 +293,15 @@ bool SnapmakerPrinterAgent::fetch_filament_info(std::string dev_id, FilamentSync
                 std::string   name_hint = sub_type_name_hint(trim_and_upper(safe_at(filament_sub_type, i, empty_str)));
                 const Preset* match = find_closest_color_preset_by_vendor_and_type(bundle->filaments, vendor, tray.tray_type,
                                                                                     tray.tray_color, name_hint);
+                // Without a filament_id the tray is dropped by the sync, so such a match is no match.
+                if (match && effective_filament_id(bundle->filaments, *match).empty()) {
+                    BOOST_LOG_TRIVIAL(warning) << "Filament sync: profile " << match->name << " for slot " << i
+                                               << " has no filament_id, falling back to the filament type";
+                    match = nullptr;
+                }
 
                 if (match) {
-                    tray.tray_info_idx = match->filament_id;
+                    tray.tray_info_idx = effective_filament_id(bundle->filaments, *match);
                     BOOST_LOG_TRIVIAL(warning) << "Filament sync: Found manufacturer-specific profile for slot " << i << ": "
                                                << match->name;
                     // The generic filament_id resolution downstream may not land back on `match`

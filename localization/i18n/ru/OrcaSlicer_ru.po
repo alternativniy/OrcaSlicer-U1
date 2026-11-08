@@ -38297,6 +38297,98 @@ msgstr ""
 "Когда необходимо печатать с открытой дверцей принтера?\n"
 "Знаете ли вы, что при печати низкотемпературным материалом при более высокой температуре внутри термокамеры открытие дверцы принтера снижает вероятность засорения экструдера/хотэнда? Более подробную информацию читайте на Wiki."
 
+# AI Translated
+msgid "Purge to bin"
+msgstr "Продувка в корзину"
+
+# AI Translated
+msgid "Tool changers without a prime tower: after each tool change, run the printer's \"Purge to bin G-code\" to purge the new tool into the purge bin and wipe it, right before moving back to the print. Unavailable with the prime tower, on single extruder multi-material printers, with firmware retraction and if the printer's \"Purge to bin G-code\" is empty."
+msgstr "Для принтеров со сменой инструмента без черновой башни: после каждой смены инструмента выполняется «G-код продувки в корзину» принтера, который продувает новый инструмент в корзину и очищает сопло непосредственно перед возвратом к модели. Недоступно при черновой башне, на принтерах с одним экструдером для нескольких материалов, при откате на уровне прошивки и если «G-код продувки в корзину» принтера пуст."
+
+# AI Translated
+msgid "First purge volume"
+msgstr "Объём первой продувки"
+
+# AI Translated
+msgid "Volume purged into the purge bin when this filament is used for the first time in the print, instead of the purge to bin volume. The filament the print starts with counts as already used. Also used for every tool after a pause or a color change."
+msgstr "Объём, продуваемый в корзину, когда этот материал впервые используется в печати, вместо объёма продувки в корзину. Материал, с которого начинается печать, считается уже использованным. Также используется для каждого инструмента после паузы или смены цвета."
+
+# AI Translated
+msgid "Purge speed"
+msgstr "Скорость продувки"
+
+# AI Translated
+msgid "Purge speed as a percentage of the filament's maximum volumetric speed."
+msgstr "Скорость продувки в процентах от максимального объёмного расхода материала."
+
+# AI Translated
+msgid "Cooling pause"
+msgstr "Пауза для охлаждения"
+
+# AI Translated
+msgid "Pause with the part cooling fan on after purging, so the purged blob hardens before it is cut off."
+msgstr "Пауза с включённым обдувом модели после продувки, чтобы выдавленный пластик затвердел до того, как его оторвут."
+
+# AI Translated
+msgid "Purge to bin volume"
+msgstr "Объём продувки в корзину"
+
+# AI Translated
+msgid "Volume purged into the purge bin when this filament is used again after a tool change. Used by the \"Purge to bin\" process option."
+msgstr "Объём, продуваемый в корзину, когда этот материал снова используется после смены инструмента. Используется параметром процесса «Продувка в корзину»."
+
+# AI Translated
+msgid "Purge to bin G-code"
+msgstr "G-код продувки в корзину"
+
+# AI Translated
+msgid "Printer-specific moves of the \"Purge to bin\" process option: move to the purge bin, purge, wipe and leave. Inserted after the tool change is complete. Must leave the nozzle retracted by purge_bin_depart_retract. Absolute positioning, the extrusion mode and the feedrate are restored after it. The part cooling fan of the print is restored after it too, or where the template has a \";_FORCE_RESUME_FAN_SPEED\" line."
+msgstr "Действия принтера для параметра процесса «Продувка в корзину»: переезд к корзине, продувка, очистка и отъезд. Вставляется после завершения смены инструмента. Должен оставить откат сопла равным purge_bin_depart_retract. Абсолютное позиционирование, режим экструзии и скорость восстанавливаются после него. Обдув модели тоже восстанавливается после него или там, где в шаблоне есть строка «;_FORCE_RESUME_FAN_SPEED»."
+
+# AI Translated
+msgid "Purge to bin is enabled, but the printer's \"Purge to bin G-code\" is empty. No purge will be done."
+msgstr "Продувка в корзину включена, но «G-код продувки в корзину» принтера пуст. Продувка выполняться не будет."
+
+# AI Translated
+msgid "Purge to bin is not supported with firmware retraction. No purge will be done."
+msgstr "Продувка в корзину не поддерживается при откате на уровне прошивки. Продувка выполняться не будет."
+
+# AI Translated
+msgid "Retraction when leaving the purge bin"
+msgstr "Откат при отъезде от корзины"
+
+# AI Translated
+msgid "Retraction length (purge to bin)"
+msgstr "Длина отката (продувка в корзину)"
+
+# AI Translated
+msgid "Total retraction length when the nozzle leaves the purge bin after a purge to bin. Keeps the nozzle from oozing on the way back to the print."
+msgstr "Полная длина отката, когда сопло покидает корзину после продувки. Не даёт соплу подтекать по пути к модели."
+
+# AI Translated
+msgid "Extra length on restart (purge to bin)"
+msgstr "Доп. подача после отката (продувка в корзину)"
+
+# AI Translated
+msgid "Added to the deretraction on the print after leaving the purge bin. A negative value deretracts less than was retracted."
+msgstr "Добавляется к подаче после отката на модели после отъезда от корзины. Отрицательное значение подаёт меньше, чем было откачено."
+
+# AI Translated
+msgid "Disable the prime tower, single extruder multimaterial mode and firmware retraction, and set the printer's purge to bin G-code to use this setting."
+msgstr "Чтобы использовать этот параметр, отключите черновую башню, режим одного экструдера для нескольких материалов и откат на уровне прошивки и задайте G-код продувки в корзину принтера."
+
+# AI Translated
+msgid "Enable purge to bin to edit this setting."
+msgstr "Включите продувку в корзину, чтобы изменить этот параметр."
+
+# AI Translated
+msgid "Wait for the temperature when changing tools"
+msgstr "Ждать температуру при смене инструмента"
+
+# AI Translated
+msgid "It will use the M109 instead of M104 T[target] after changing tools if this is set to true"
+msgstr "Если включено, после смены инструмента используется M109 вместо M104 T[target]"
+
 #: resources/data/hints.ini: [hint:Avoid warping]
 msgid ""
 "Avoid warping\n"

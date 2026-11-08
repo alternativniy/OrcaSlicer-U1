@@ -1193,6 +1193,18 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig *config, in
     toggle_line("enable_tower_interface_cooldown_during_tower",
                 have_prime_tower && !is_belt_printer && config->opt_bool("enable_tower_interface_features"), -1, _L("Enable the prime tower and tower interface features on a non-belt printer to use this setting."));
 
+    // Orca: purge to bin. Without the printer's purge_bin_gcode the slicer has nothing to run at the bin. Keep the checkbox
+    // enabled while it is checked, so a project or preset that comes with it checked can still be unchecked.
+    {
+        const DynamicPrintConfig &printer_config   = preset_bundle->printers.get_edited_preset().config;
+        const bool                can_purge_to_bin = !have_prime_tower && !bSEMM && !printer_config.opt_bool("use_firmware_retraction") &&
+                                                     !printer_config.opt_string("purge_bin_gcode").empty();
+        toggle_field("purge_to_bin", can_purge_to_bin || config->opt_bool("purge_to_bin"), -1,
+                     _L("Disable the prime tower, single extruder multimaterial mode and firmware retraction, and set the printer's purge to bin G-code to use this setting."));
+        toggle_field("purge_bin_speed_ratio", can_purge_to_bin && config->opt_bool("purge_to_bin"), -1,
+                     _L("Enable purge to bin to edit this setting."));
+    }
+
     bool purge_in_primetower = preset_bundle->printers.get_edited_preset().config.opt_bool("purge_in_prime_tower");
 
     for (auto el : {"wipe_tower_rotation_angle", "wipe_tower_cone_angle",

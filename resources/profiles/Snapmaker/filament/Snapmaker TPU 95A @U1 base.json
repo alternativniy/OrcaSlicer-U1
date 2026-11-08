@@ -2,6 +2,12 @@
 	"type": "filament",
 	"name": "Snapmaker TPU 95A @U1 base",
 	"from": "system",
+	"filament_purge_bin_depart_retract": [
+		"2"
+	],
+	"filament_purge_bin_restart_extra": [
+		"0"
+	],
 	"filament_id": "OFvmwTZE",
 	"instantiation": "false",
 	"overhang_fan_threshold": [

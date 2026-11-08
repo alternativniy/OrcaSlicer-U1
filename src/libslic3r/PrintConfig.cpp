@@ -10350,6 +10350,9 @@ std::set<std::string> printer_options_with_variant_1 = {
     "retract_length_toolchange",
     "retract_restart_extra",
     "retract_restart_extra_toolchange",
+    // Orca: purge to bin
+    "purge_bin_depart_retract",
+    "purge_bin_restart_extra",
     "long_retractions_when_cut",
     "retraction_distances_when_cut",
     "nozzle_volume",

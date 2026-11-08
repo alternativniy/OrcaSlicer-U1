@@ -4588,6 +4588,8 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
     auto is_double_extruder = get_printer_extruder_count() == 2;
     std::vector<AmsInfo> ams_infos;
     int                  index = 0;
+    // Orca(U1): presets a printer agent named for a tray; the sync keeps them as they are.
+    std::set<std::string> agent_picks;
     for (auto &entry : filament_ams_list) {
         auto & ams = entry.second;
         auto filament_id = ams.opt_string("filament_id", 0u);
@@ -4647,8 +4649,10 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
             return f.is_compatible && filaments.get_preset_base(f) == &f && f.filament_id == filament_id; });
         warn_ambiguous_filament_id_match(filaments, iter, filament_id);
         // Orca(U1): the agent's pick wins over the filament_id lookup above.
-        if (hinted != filaments.end())
+        if (hinted != filaments.end()) {
             iter = hinted;
+            agent_picks.insert(hinted->name);
+        }
         if (iter == filaments.end()) {
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": filament_id %1% not found or system or compatible") % filament_id;
             if (!filament_type.empty()) {
@@ -4787,12 +4791,13 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
 
     // A slot whose current preset is a compatible user preset for the filament the sync picked keeps
     // that preset and its overrides, so the sync updates the tray metadata only. User presets carry
-    // their system parent's filament_id. Orca(U1): a user preset the sync picked (named by a printer
-    // agent) is taken as is.
-    auto synced_preset_name = [this](const std::string &current_name, const std::string &ams_name) -> std::string {
+    // their system parent's filament_id. Orca(U1): a preset a printer agent named is taken as is.
+    auto synced_preset_name = [this, &agent_picks](const std::string &current_name, const std::string &ams_name) -> std::string {
+        if (agent_picks.count(ams_name) != 0)
+            return ams_name;
         const Preset *current = filaments.find_preset(current_name, false);
         const Preset *synced  = filaments.find_preset(ams_name, false);
-        return current && synced && synced->is_system && !current->is_system && current->is_compatible &&
+        return current && synced && !current->is_system && current->is_compatible &&
                !synced->filament_id.empty() && current->filament_id == synced->filament_id ? current_name : ams_name;
     };
 

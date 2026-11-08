@@ -5885,6 +5885,36 @@ TEST_CASE("Syncing the AMS takes the preset an agent named for the tray", "[Pres
     CHECK(unknowns.empty());
 }
 
+TEST_CASE("Syncing the AMS without an agent's pick keeps the slot's user preset for a user filament", "[Preset][Bundle][AMS]")
+{
+    PresetBundle bundle;
+    auto add_filament = [&](const std::string &name, const std::string &inherits, const std::string &filament_id) {
+        Preset &preset     = add_inmemory_preset(bundle.filaments, name, inherits);
+        preset.filament_id = filament_id;
+    };
+    // A user-made custom filament (a user root with its own id) and a user preset derived from it.
+    add_filament("Custom PLA", "", "P1234567");
+    add_filament("My Custom PLA", "Custom PLA", "P1234567");
+    bundle.set_num_filaments(1u, std::string("#111111"));
+    bundle.filament_presets = {"My Custom PLA"};
+
+    DynamicPrintConfig config;
+    config.set_key_value("filament_id", new ConfigOptionStrings{"P1234567"});
+    config.set_key_value("filament_colour", new ConfigOptionStrings{"#FF0000"});
+    config.set_key_value("filament_colour_type", new ConfigOptionStrings{"1"});
+    config.set_key_value("filament_multi_colour", new ConfigOptionStrings{});
+    config.set_key_value("ams_id", new ConfigOptionStrings{"0"});
+    config.set_key_value("slot_id", new ConfigOptionStrings{"0"});
+    config.set_key_value("filament_type", new ConfigOptionStrings{"PLA"});
+    bundle.filament_ams_list.emplace(0, std::move(config));
+
+    std::vector<std::pair<DynamicPrintConfig *, std::string>> unknowns;
+    std::map<int, AMSMapInfo> maps;
+    MergeFilamentInfo merge_info;
+    REQUIRE(bundle.sync_ams_list(unknowns, false, maps, true, merge_info) == 1);
+    CHECK(bundle.filament_presets == std::vector<std::string>{"My Custom PLA"});
+}
+
 TEST_CASE("Loading incomplete mixed metadata normalizes slots before adding a filament", "[Preset][Bundle][FilamentMixer]")
 {
     DynamicPrintConfig config = DynamicPrintConfig::full_print_config();

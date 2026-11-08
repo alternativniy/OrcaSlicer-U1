@@ -4644,8 +4644,12 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
         // which the root-only lookup above never picks. Take it if it is compatible and has the
         // tray's filament_id; otherwise the lookup above stands.
         if (const auto *hint = ams.option<ConfigOptionStrings>("filament_settings_id"); hint && !hint->values.empty() && !hint->values.front().empty()) {
-            auto hinted = std::find_if(filaments.begin(), filaments.end(), [&hint, &filament_id](const Preset &f) {
-                return f.name == hint->values.front() && f.is_compatible && f.filament_id == filament_id; });
+            auto hinted = std::find_if(filaments.begin(), filaments.end(), [this, &hint, &filament_id](const Preset &f) {
+                if (f.name != hint->values.front() || !f.is_compatible)
+                    return false;
+                // A user preset without its own filament_id carries its system parent's.
+                const Preset *base = f.filament_id.empty() ? filaments.get_preset_base(f) : &f;
+                return base != nullptr && base->filament_id == filament_id; });
             if (hinted != filaments.end())
                 iter = hinted;
         }

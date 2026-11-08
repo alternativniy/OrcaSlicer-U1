@@ -5853,8 +5853,10 @@ TEST_CASE("Syncing the AMS takes the preset an agent named for the tray", "[Pres
     add_filament("System PETG", "", "GFG00", true);
     add_filament("My PLA", "System PLA", "GFA00", false);
     add_filament("My PETG", "System PETG", "GFG00", false);
-    bundle.set_num_filaments(2u, std::string("#111111"));
-    bundle.filament_presets = {"System PETG", "System PETG"};
+    // A user preset loaded from the cloud without a filament_id of its own: it counts as its parent's.
+    add_filament("Cloud PLA", "System PLA", "", false);
+    bundle.set_num_filaments(3u, std::string("#111111"));
+    bundle.filament_presets = {"System PETG", "System PETG", "System PETG"};
 
     auto add_tray = [&](int slot, const std::string &filament_id, const std::string &type, const std::string &hint) {
         DynamicPrintConfig config;
@@ -5871,12 +5873,13 @@ TEST_CASE("Syncing the AMS takes the preset an agent named for the tray", "[Pres
     };
     add_tray(0, "GFA00", "PLA", "My PLA");
     add_tray(1, "GFA00", "PLA", "My PETG"); // names a preset of another filament
+    add_tray(2, "GFA00", "PLA", "Cloud PLA");
 
     std::vector<std::pair<DynamicPrintConfig *, std::string>> unknowns;
     std::map<int, AMSMapInfo> maps;
     MergeFilamentInfo merge_info;
-    REQUIRE(bundle.sync_ams_list(unknowns, false, maps, true, merge_info) == 2);
-    CHECK(bundle.filament_presets == std::vector<std::string>{"My PLA", "System PLA"});
+    REQUIRE(bundle.sync_ams_list(unknowns, false, maps, true, merge_info) == 3);
+    CHECK(bundle.filament_presets == std::vector<std::string>{"My PLA", "System PLA", "Cloud PLA"});
     CHECK(unknowns.empty());
 }
 

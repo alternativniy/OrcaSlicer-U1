@@ -7,6 +7,8 @@
 	"instantiation": "true",
 	"printer_model": "Snapmaker U1",
 	"printer_variant": "0.4+0.6",
+	"extruder_clearance_height_to_rod": "27.5",
+	"extruder_clearance_radius": "72.5",
 	"default_print_profile": "0.20 Standard @Snapmaker U1 (0.4+0.6 nozzle)",
 	"max_layer_height": [
 		"0.32",

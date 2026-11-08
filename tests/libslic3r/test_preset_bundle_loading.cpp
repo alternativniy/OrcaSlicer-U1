@@ -5837,6 +5837,49 @@ TEST_CASE("Syncing the AMS keeps a slot's user preset for the tray's filament", 
     }
 }
 
+// Orca(U1): a printer agent can name the exact preset it matched for a tray through the tray's
+// filament_settings_id. The filament_id lookup alone only reaches root presets, so a user preset
+// that inherits the system one is picked only through that hint, and only if it has the tray's
+// filament_id; a hint for another filament is ignored.
+TEST_CASE("Syncing the AMS takes the preset an agent named for the tray", "[Preset][Bundle][AMS]")
+{
+    PresetBundle bundle;
+    auto add_filament = [&](const std::string &name, const std::string &inherits, const std::string &filament_id, bool is_system) {
+        Preset &preset     = add_inmemory_preset(bundle.filaments, name, inherits);
+        preset.is_system   = is_system;
+        preset.filament_id = filament_id;
+    };
+    add_filament("System PLA", "", "GFA00", true);
+    add_filament("System PETG", "", "GFG00", true);
+    add_filament("My PLA", "System PLA", "GFA00", false);
+    add_filament("My PETG", "System PETG", "GFG00", false);
+    bundle.set_num_filaments(2u, std::string("#111111"));
+    bundle.filament_presets = {"System PETG", "System PETG"};
+
+    auto add_tray = [&](int slot, const std::string &filament_id, const std::string &type, const std::string &hint) {
+        DynamicPrintConfig config;
+        config.set_key_value("filament_id", new ConfigOptionStrings{filament_id});
+        config.set_key_value("filament_colour", new ConfigOptionStrings{"#FF0000"});
+        config.set_key_value("filament_colour_type", new ConfigOptionStrings{"1"});
+        config.set_key_value("filament_multi_colour", new ConfigOptionStrings{});
+        config.set_key_value("ams_id", new ConfigOptionStrings{"0"});
+        config.set_key_value("slot_id", new ConfigOptionStrings{std::to_string(slot)});
+        config.set_key_value("filament_type", new ConfigOptionStrings{type});
+        if (!hint.empty())
+            config.set_key_value("filament_settings_id", new ConfigOptionStrings{hint});
+        bundle.filament_ams_list.emplace(slot, std::move(config));
+    };
+    add_tray(0, "GFA00", "PLA", "My PLA");
+    add_tray(1, "GFA00", "PLA", "My PETG"); // names a preset of another filament
+
+    std::vector<std::pair<DynamicPrintConfig *, std::string>> unknowns;
+    std::map<int, AMSMapInfo> maps;
+    MergeFilamentInfo merge_info;
+    REQUIRE(bundle.sync_ams_list(unknowns, false, maps, true, merge_info) == 2);
+    CHECK(bundle.filament_presets == std::vector<std::string>{"My PLA", "System PLA"});
+    CHECK(unknowns.empty());
+}
+
 TEST_CASE("Loading incomplete mixed metadata normalizes slots before adding a filament", "[Preset][Bundle][FilamentMixer]")
 {
     DynamicPrintConfig config = DynamicPrintConfig::full_print_config();

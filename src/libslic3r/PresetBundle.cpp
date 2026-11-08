@@ -4639,6 +4639,16 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
             has_type |= f.config.opt_string("filament_type", 0u) == filament_type;
             return f.is_compatible && filaments.get_preset_base(f) == &f && f.filament_id == filament_id; });
         warn_ambiguous_filament_id_match(filaments, iter, filament_id);
+        // Orca(U1): a printer agent can name the exact preset it matched for this tray (see
+        // IPrinterAgent::get_refined_filament_preset()), e.g. a user preset inheriting a system one,
+        // which the root-only lookup above never picks. Take it if it is compatible and has the
+        // tray's filament_id; otherwise the lookup above stands.
+        if (const auto *hint = ams.option<ConfigOptionStrings>("filament_settings_id"); hint && !hint->values.empty() && !hint->values.front().empty()) {
+            auto hinted = std::find_if(filaments.begin(), filaments.end(), [&hint, &filament_id](const Preset &f) {
+                return f.name == hint->values.front() && f.is_compatible && f.filament_id == filament_id; });
+            if (hinted != filaments.end())
+                iter = hinted;
+        }
         if (iter == filaments.end()) {
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": filament_id %1% not found or system or compatible") % filament_id;
             if (!filament_type.empty()) {

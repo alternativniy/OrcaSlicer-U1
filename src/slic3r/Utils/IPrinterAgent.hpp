@@ -468,8 +468,8 @@ public:
      * maps it to a *root* preset (no "inherits") with that id. An agent that found a better match
      * during fetch_filament_info() (e.g. by vendor, or a user preset that inherits a system one) can
      * report it here. Sidebar::build_filament_ams_list() passes it on as the slot's
-     * "filament_settings_id", and sync_ams_list() uses it when it is compatible and has the slot's
-     * filament_id.
+     * "filament_settings_id", and sync_ams_list() takes it over the filament_id lookup whenever it is
+     * compatible, even for a slot without a filament_id.
      *
      * @param slot_index AMS lane index, ams_id * 4 + slot_id (AmsTrayData::slot_index).
      * @return Preset name, or "" when the agent has nothing better than the filament_id (default).

@@ -5853,10 +5853,11 @@ TEST_CASE("Syncing the AMS takes the preset an agent named for the tray", "[Pres
     add_filament("System PETG", "", "GFG00", true);
     add_filament("My PLA", "System PLA", "GFA00", false);
     add_filament("My PETG", "System PETG", "GFG00", false);
-    // A user preset loaded from the cloud without a filament_id of its own: it counts as its parent's.
-    add_filament("Cloud PLA", "System PLA", "", false);
+    add_filament("Other PLA", "System PLA", "GFA00", false);
+    add_filament("No id PLA", "System PLA", "", false);
     bundle.set_num_filaments(3u, std::string("#111111"));
-    bundle.filament_presets = {"System PETG", "System PETG", "System PETG"};
+    // The slot's current user preset shares the tray's filament_id, yet the agent's pick replaces it.
+    bundle.filament_presets = {"Other PLA", "System PETG", "System PETG"};
 
     auto add_tray = [&](int slot, const std::string &filament_id, const std::string &type, const std::string &hint) {
         DynamicPrintConfig config;
@@ -5872,14 +5873,15 @@ TEST_CASE("Syncing the AMS takes the preset an agent named for the tray", "[Pres
         bundle.filament_ams_list.emplace(slot, std::move(config));
     };
     add_tray(0, "GFA00", "PLA", "My PLA");
-    add_tray(1, "GFA00", "PLA", "My PETG"); // names a preset of another filament
-    add_tray(2, "GFA00", "PLA", "Cloud PLA");
+    add_tray(1, "GFA00", "PLA", "My PETG"); // the agent's pick wins over the filament_id
+    add_tray(2, "", "PLA", "No id PLA");    // a pick needs no filament_id
+    add_tray(3, "", "", "");                // an empty slot stays empty
 
     std::vector<std::pair<DynamicPrintConfig *, std::string>> unknowns;
     std::map<int, AMSMapInfo> maps;
     MergeFilamentInfo merge_info;
     REQUIRE(bundle.sync_ams_list(unknowns, false, maps, true, merge_info) == 3);
-    CHECK(bundle.filament_presets == std::vector<std::string>{"My PLA", "System PLA", "Cloud PLA"});
+    CHECK(bundle.filament_presets == std::vector<std::string>{"My PLA", "My PETG", "No id PLA"});
     CHECK(unknowns.empty());
 }
 

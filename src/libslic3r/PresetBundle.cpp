@@ -4598,11 +4598,18 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
         auto ams_id     = ams.opt_string("ams_id", 0u);
         auto slot_id    = ams.opt_string("slot_id", 0u);
         auto is_placeholder = ams.has("filament_slot_placeholder") && ams.opt_bool("filament_slot_placeholder", 0u);
-        ams_infos.push_back({filament_id.empty() ? false : true, false, is_placeholder, filament_color});
+        // Orca(U1): a printer agent can name the exact preset it matched for this tray by vendor,
+        // type and colour (see IPrinterAgent::get_refined_filament_preset()), e.g. a user preset the
+        // root-only filament_id lookup below never picks. Such a tray is loaded even without an id.
+        auto hinted = filaments.end();
+        if (const auto *hint = ams.option<ConfigOptionStrings>("filament_settings_id"); hint && !hint->values.empty() && !hint->values.front().empty())
+            hinted = std::find_if(filaments.begin(), filaments.end(), [&hint](const Preset &f) { return f.is_compatible && f.name == hint->values.front(); });
+        const bool has_filament = !filament_id.empty() || hinted != filaments.end();
+        ams_infos.push_back({has_filament, false, is_placeholder, filament_color});
         AMSMapInfo temp = {ams_id, slot_id};
         ams_array_maps.push_back(temp);
         index++;
-        if (filament_id.empty()) {
+        if (!has_filament) {
             if (use_map) {
                 for (int j = maps.size() - 1; j >= 0; j--) {
                     if (maps[j].slot_id == slot_id && maps[j].ams_id == ams_id) {
@@ -4639,20 +4646,9 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
             has_type |= f.config.opt_string("filament_type", 0u) == filament_type;
             return f.is_compatible && filaments.get_preset_base(f) == &f && f.filament_id == filament_id; });
         warn_ambiguous_filament_id_match(filaments, iter, filament_id);
-        // Orca(U1): a printer agent can name the exact preset it matched for this tray (see
-        // IPrinterAgent::get_refined_filament_preset()), e.g. a user preset inheriting a system one,
-        // which the root-only lookup above never picks. Take it if it is compatible and has the
-        // tray's filament_id; otherwise the lookup above stands.
-        if (const auto *hint = ams.option<ConfigOptionStrings>("filament_settings_id"); hint && !hint->values.empty() && !hint->values.front().empty()) {
-            auto hinted = std::find_if(filaments.begin(), filaments.end(), [this, &hint, &filament_id](const Preset &f) {
-                if (f.name != hint->values.front() || !f.is_compatible)
-                    return false;
-                // A user preset without its own filament_id carries its system parent's.
-                const Preset *base = f.filament_id.empty() ? filaments.get_preset_base(f) : &f;
-                return base != nullptr && base->filament_id == filament_id; });
-            if (hinted != filaments.end())
-                iter = hinted;
-        }
+        // Orca(U1): the agent's pick wins over the filament_id lookup above.
+        if (hinted != filaments.end())
+            iter = hinted;
         if (iter == filaments.end()) {
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": filament_id %1% not found or system or compatible") % filament_id;
             if (!filament_type.empty()) {
@@ -4791,11 +4787,12 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
 
     // A slot whose current preset is a compatible user preset for the filament the sync picked keeps
     // that preset and its overrides, so the sync updates the tray metadata only. User presets carry
-    // their system parent's filament_id.
+    // their system parent's filament_id. Orca(U1): a user preset the sync picked (named by a printer
+    // agent) is taken as is.
     auto synced_preset_name = [this](const std::string &current_name, const std::string &ams_name) -> std::string {
         const Preset *current = filaments.find_preset(current_name, false);
         const Preset *synced  = filaments.find_preset(ams_name, false);
-        return current && synced && !current->is_system && current->is_compatible &&
+        return current && synced && synced->is_system && !current->is_system && current->is_compatible &&
                !synced->filament_id.empty() && current->filament_id == synced->filament_id ? current_name : ams_name;
     };
 

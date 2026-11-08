@@ -25,9 +25,8 @@ private:
     // Combine filament_type + filament_sub_type into a unified type string
     static std::string combine_filament_type(const std::string& type, const std::string& sub_type);
 
-    // Populated by fetch_filament_info() for slots whose best vendor/type/color match cannot be
-    // trusted to survive PresetBundle::sync_ams_list()'s generic filament_id-based resolution
-    // (see IPrinterAgent::get_refined_filament_preset() for why). Keyed by AMS slot index.
+    // The vendor/type/colour match fetch_filament_info() found per slot, handed to the sync by name
+    // (see IPrinterAgent::get_refined_filament_preset()). Keyed by AMS slot index.
     std::map<int, std::string> m_refined_filament_matches;
 };
 

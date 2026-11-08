@@ -91,22 +91,26 @@ Merged upstream after the 2.5.0 branch was cut, so not in `v2.5.0`. Cherry-picke
 match reached the GUI only as a `filament_id`, which `PresetBundle::sync_ams_list()` resolves to a root
 preset again. User presets saved from a system one never matched.
 - The agent considers every visible, compatible preset; finish sub-types (SnapSpeed, Silk, Wood, Matte,
-  Marble, HF) count as the base type plus a preset-name hint; when the filament_id alone could resolve
-  elsewhere, the agent remembers the exact preset (`m_refined_filament_matches`).
+  Marble, HF) count as the base type plus a preset-name hint. The match is decided by vendor, type and
+  colour, never by `filament_id`; the agent remembers it per slot (`m_refined_filament_matches`).
 - `IPrinterAgent::get_refined_filament_preset(slot_index)` (default: none) exposes it.
   `Sidebar::build_filament_ams_list()` stores it in the tray config as `filament_settings_id`, and
-  `PresetBundle::sync_ams_list()` takes that preset when it is compatible and has the tray's
-  `filament_id`. On 2.4 the substitution happened in Plater after the sync; 2.5's sync (mapping,
-  appended colours, mixed filaments) breaks the slot ↔ preset index assumption that needed, so it moved
-  into the resolution itself.
+  `PresetBundle::sync_ams_list()` takes that preset over its `filament_id` lookup whenever it is
+  compatible — also for a tray without a `filament_id`, which otherwise counts as empty. The 2.5 rule
+  that keeps a slot's current user preset sharing the synced preset's `filament_id` applies only when
+  the sync picked a system preset, so it never overrides the agent's pick. The tray's `filament_id`
+  (the match's own, else the type's generic one) only tags the tray, e.g. for change detection.
+- On 2.4 the substitution happened in Plater after the sync; 2.5's sync (mapping, appended colours,
+  mixed filaments) breaks the slot ↔ preset index assumption that needed, so it moved into the
+  resolution itself.
 - Files: `SnapmakerPrinterAgent.{hpp,cpp}`, `IPrinterAgent.hpp`, `Plater.cpp`, `PresetBundle.cpp`; test
   "Syncing the AMS takes the preset an agent named for the tray" in
   `tests/libslic3r/test_preset_bundle_loading.cpp`.
-- Upstream bug fixed on the way (`4faaaa8faa`): user presets loaded from the cloud inherited the parent's
-  `filament_id` only when the cloud sent `"null"`; an empty value left it empty, the tray went downstream
-  without an id and `sync_ams_list()` skipped it — the sync did nothing. `Preset.cpp` now inherits on empty
-  too; the agent and the hint check fall back to the parent's id. Candidate for an upstream PR on its own.
-- Commits: `7126c51171` (ported from `c8cf1ab792`, `2628f52da5`), `4faaaa8faa`. Needs a check on a real U1.
+- Upstream bug fixed on the way: user presets loaded from the cloud inherited the parent's
+  `filament_id` only when the cloud sent `"null"`, not when it sent an empty value. `Preset.cpp` now
+  inherits on empty too (`4faaaa8faa`). The sync does not depend on it. Candidate for an upstream PR.
+- Commits: `7126c51171` (ported from `c8cf1ab792`, `2628f52da5`), `4faaaa8faa`, `cc14d67a17`. Needs a
+  check on a real U1.
 - Conflict watch: upstream #12232, #15145 (+ #15179/#15180/#15183/#15185), #15278, #14760, #15196 touch
   the same code. Reconcile against whichever merges first.
 

@@ -18,6 +18,9 @@
 #include <numeric>
 #include <sstream>
 #include <iomanip>
+
+#include <boost/algorithm/string/predicate.hpp>
+
 #include "libslic3r/Circle.hpp"
 #include "libslic3r/ExtrusionEntity.hpp"
 #include "libslic3r/ArcFitter.hpp"
@@ -1271,7 +1274,8 @@ public:
     WipeTowerWriter& speed_override_backup()
     {
         // BBS: BBL machine don't support speed backup
-        if (m_gcode_flavor == gcfMarlinLegacy || m_gcode_flavor == gcfMarlinFirmware)
+        // Orca(U1): Snapmaker U1 firmware supports M220 B/R too, even on the klipper gcode flavor.
+        if (m_gcode_flavor == gcfMarlinLegacy || m_gcode_flavor == gcfMarlinFirmware || m_speed_override_backup)
             m_gcode += "M220 B\n";
         return *this;
     }
@@ -1280,7 +1284,7 @@ public:
     WipeTowerWriter& speed_override_restore()
     {
         // BBS: BBL machine don't support speed restore
-        if (m_gcode_flavor == gcfMarlinLegacy || m_gcode_flavor == gcfMarlinFirmware)
+        if (m_gcode_flavor == gcfMarlinLegacy || m_gcode_flavor == gcfMarlinFirmware || m_speed_override_backup)
             m_gcode += "M220 R\n";
         return *this;
     }
@@ -1483,6 +1487,8 @@ public:
     void set_layer_id(int layer_id) { m_layer_id = layer_id; }
     void set_multi_nozzle_group_result(const MultiNozzleUtils::LayeredNozzleGroupResult *multi_nozzle_group_result) { m_multi_nozzle_group_result = multi_nozzle_group_result; }
     void set_physical_extruder_map(const std::vector<int> &physical_extruder_map) { m_physical_extruder_map = physical_extruder_map; }
+    // Orca(U1): back up / restore the speed override (M220 B/R) on a non-Marlin flavor too.
+    void set_speed_override_backup(bool enable) { m_speed_override_backup = enable; }
 
     // physical_extruder_map defaults to the single element {0} and is only widened to one entry
     // per extruder on IMEX printers, so indexing it by tool is out of range on any other
@@ -1589,6 +1595,7 @@ private:
 #endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
     float         m_used_filament_length = 0.f;
     GCodeFlavor   m_gcode_flavor;
+    bool          m_speed_override_backup = false;
     bool          m_enable_arc_fitting = true;
     const std::vector<WipeTower::FilamentParameters>& m_filpar;
 
@@ -1990,6 +1997,7 @@ WipeTower::WipeTower(const PrintConfig& config, int plate_idx, Vec3d plate_origi
     m_sparse_layers_skipped(wipe_tower_sparse_layers_skipped(config)),
     m_sparse_layers_combined(wipe_tower_sparse_layers_combined(config)),
     m_gcode_flavor(config.gcode_flavor),
+    m_is_snapmaker_u1(boost::icontains(config.printer_model.value, "Snapmaker") && boost::icontains(config.printer_model.value, "U1")),
     m_travel_speed(config.travel_speed.get_at(get_extruder_index(config, (unsigned int)initial_tool))),
     m_current_tool(initial_tool),
     //wipe_volumes(flush_matrix)
@@ -2936,6 +2944,7 @@ void WipeTower::set_for_wipe_tower_writer(WipeTowerWriter &writer)
     writer.set_first_layer(m_cur_layer_id == 0);
     writer.set_layer_id(m_cur_layer_id);
     writer.set_physical_extruder_map(m_physical_extruder_map);
+    writer.set_speed_override_backup(m_is_snapmaker_u1);
 }
 #if 0
 WipeTower::ToolChangeResult WipeTower::finish_layer(bool extrude_perimeter, bool extruder_fill)

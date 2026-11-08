@@ -288,13 +288,15 @@ TEST_CASE("The wipe tower's toolchange planner flush follows the gcode flavor", 
     }
 }
 
-// Orca(U1): the type2 tower forces M220 S100 before purging. Snapmaker U1 firmware supports
+// Orca(U1): both tower types force M220 S100 before purging. Snapmaker U1 firmware supports
 // M220 B/R on the klipper flavor, so the user's speed override has to be backed up and restored
 // around it; other klipper printers keep getting neither.
-TEST_CASE("The type2 wipe tower restores the speed override on a Snapmaker U1", "[WipeTower]")
+TEST_CASE("The wipe tower restores the speed override on a Snapmaker U1", "[WipeTower]")
 {
+    const std::string tower_type = GENERATE("type1", "type2");
+    CAPTURE(tower_type);
     DynamicPrintConfig config = wipe_tower_toolchange_config("klipper");
-    config.set_deserialize_strict({ { "wipe_tower_type", "type2" } });
+    config.set_deserialize_strict({ { "wipe_tower_type", tower_type } });
     SECTION("Snapmaker U1") {
         config.set_deserialize_strict({ { "printer_model", "Snapmaker U1" } });
         // The restore follows the tower region, so look at the whole G-code.

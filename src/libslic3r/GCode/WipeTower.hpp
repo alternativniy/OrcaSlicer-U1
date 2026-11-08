@@ -540,6 +540,7 @@ private:
     //bool            m_set_extruder_trimpot      = false;
     bool            m_adhesion                  = true;
     GCodeFlavor     m_gcode_flavor;
+    bool            m_is_snapmaker_u1 = false; // Orca(U1): see WipeTowerWriter::set_speed_override_backup()
     bool                      m_is_multiple_nozzle = false;
     std::vector<unsigned int> m_normal_accels;
     std::vector<unsigned int> m_first_layer_normal_accels;

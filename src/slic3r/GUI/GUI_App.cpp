@@ -6616,7 +6616,11 @@ void GUI_App::check_new_version_sf(bool show_tips, int by_user)
         detect_updater_os_info()
     };
 
-    const std::string query_string = build_updater_query(query);
+    // Orca(U1): the updater query (installation id, OS details) and its signature are meant for
+    // upstream's check-version service only. Don't send them to any other version check URL,
+    // such as the fork's GitHub releases.
+    const bool        is_orca_service = version_check_url.find("check-version.orcaslicer.com") != std::string::npos;
+    const std::string query_string    = is_orca_service ? build_updater_query(query) : std::string();
     if (!query_string.empty()) {
         const bool has_query = version_check_url.find('?') != std::string::npos;
         if (!has_query)
@@ -6627,7 +6631,8 @@ void GUI_App::check_new_version_sf(bool show_tips, int by_user)
     }
 
     auto http = Http::get(version_check_url);
-    maybe_attach_updater_signature(http, query_string, version_check_url);
+    if (is_orca_service)
+        maybe_attach_updater_signature(http, query_string, version_check_url);
 
     http.header("accept", "application/vnd.github.v3+json")
         .timeout_connect(5)
@@ -6652,7 +6657,10 @@ void GUI_App::check_new_version_sf(bool show_tips, int by_user)
             std::stringstream           json_stream(body);
             boost::property_tree::read_json(json_stream, root);
 
-            std::regex matcher("[0-9]+\\.[0-9]+(\\.[0-9]+)*(-[A-Za-z0-9]+)?(\\+[A-Za-z0-9]+)?");
+            // Orca(U1): support dot-separated pre-release/build identifiers that themselves
+            // contain hyphens (e.g. "2.5.0-u1-1.0.0"), so the fork's own semver suffix
+            // compares correctly instead of being truncated at the first embedded hyphen.
+            std::regex matcher("[0-9]+\\.[0-9]+(\\.[0-9]+)*(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?");
             Semver    current_version = get_version(SoftFever_VERSION, matcher);
             Semver    best_pre(0, 0, 0);
             Semver    best_release(0, 0, 0);

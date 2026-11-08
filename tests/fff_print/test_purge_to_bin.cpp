@@ -1,12 +1,20 @@
 #include <catch2/catch_all.hpp>
 
 #include "libslic3r/libslic3r.h"
+#include "libslic3r/Config.hpp"
+#include "libslic3r/CustomGCode.hpp"
+#include "libslic3r/Model.hpp"
+#include "libslic3r/Print.hpp"
+#include "libslic3r/PrintConfig.hpp"
 
-#include "test_data.hpp"
+#include "test_helpers.hpp"
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <cmath>
 #include <cstdlib>
 #include <sstream>
+#include <string>
+#include <vector>
 
 using namespace Slic3r;
 using namespace Slic3r::Test;
@@ -63,7 +71,7 @@ std::string slice_cube(const DynamicPrintConfig &config)
 {
     Print print;
     Model model;
-    init_print({ TestMesh::cube_20x20x20 }, print, model, config, true);
+    init_print({ cube(20) }, print, model, config);
     return gcode(print);
 }
 
@@ -72,7 +80,7 @@ std::string slice_cube_with_custom_gcode(const DynamicPrintConfig &config, Custo
 {
     Print print;
     Model model;
-    init_print({ TestMesh::cube_20x20x20 }, print, model, config, true);
+    init_print({ cube(20) }, print, model, config);
     model.plates_custom_gcodes[model.curr_plate_index].gcodes.push_back({ 10.0, type, 1, "", extra });
     print.apply(model, print.full_print_config());
     return gcode(print);
@@ -84,7 +92,7 @@ std::string slice_two_cubes(const DynamicPrintConfig &config_in)
 {
     Print print;
     Model model;
-    init_print({ TestMesh::cube_20x20x20, TestMesh::cube_20x20x20 }, print, model, config_in, true);
+    init_print({ cube(20), cube(20) }, print, model, config_in);
     model.objects[1]->config.set_key_value("extruder", new ConfigOptionInt(2));
     DynamicPrintConfig config = DynamicPrintConfig::full_print_config();
     config.apply(config_in);

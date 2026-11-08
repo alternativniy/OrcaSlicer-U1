@@ -11,27 +11,75 @@
 OrcaSlicer: an open source Next-Gen Slicing Software for Precision 3D Prints.  
 Optimize your prints with ultra-fast slicing, intelligent support generation, and seamless printer compatibility—engineered for perfection.
 
+</div>
+
 # About this fork
 
-This is [OrcaSlicer-U1](https://github.com/alternativniy/OrcaSlicer-U1), a fork of upstream [OrcaSlicer/OrcaSlicer](https://github.com/OrcaSlicer/OrcaSlicer) 2.5.0 focused on the Snapmaker U1 tool changer: our own fixes and features not (yet) upstream, plus upstream fixes pulled in ahead of their release. See [`FORK_CHANGES.md`](FORK_CHANGES.md) for the maintenance log (every change mapped to its source and branch); this section is the short version.
+**[OrcaSlicer-U1](https://github.com/alternativniy/OrcaSlicer-U1)** is a fork of [OrcaSlicer/OrcaSlicer](https://github.com/OrcaSlicer/OrcaSlicer) 2.5.0 for the **Snapmaker U1** tool changer. It adds:
 
-### Our own fixes and features
+- our own fixes and features that are not (yet) upstream;
+- upstream fixes pulled in ahead of their release.
 
-- **Purge to bin for tool changers.** Printing several materials without a prime tower: after each tool change the new tool purges into the printer's purge bin, waits for temperature, wipes on the brush and goes straight back to the print — nothing parks the cleaned nozzle in between. Purge volumes (regular and first use) and the cooling pause are per filament; after a pause or a colour change every tool gets the first-use volume again. The retraction when leaving the bin is a printer setting with per-filament overrides. Ships with a ready template for the Snapmaker U1 (Printer → Machine G-code → Purge to bin G-code); enable it in Process → Multimaterial.
-- **Optional temperature wait after a tool change** (`tool_change_temprature_wait`, Printer → Multimaterial → Advanced; key name kept from Snapmaker's own Orca for profile compatibility). Off on the U1, whose change G-code already waits, so the wiped nozzle doesn't sit and ooze.
-- **Snapmaker U1 speed-override fix.** `M220 B`/`M220 R` (save/restore the feedrate override around the prime tower's forced 100%) now also fires on the U1's klipper flavor — without it, a user-set speed override was reset to 100% at the first tool change.
-- **Snapmaker filament sync matches your own presets.** Syncing filaments from the printer finds user presets saved from a system one and vendor-specific presets, including finishes like SnapSpeed or Silk, instead of only root system presets.
-- **Independent fork versioning.** This build reports its own version (`2.5.0-u1-1.0.0`: upstream base + our own semver) and checks for updates against [this repo's releases](https://github.com/alternativniy/OrcaSlicer-U1/releases) instead of upstream's. Profile updates for other vendors still come from upstream; the Snapmaker bundle is maintained here (version `99.x`, so upstream updates never replace it).
+This section is the short version. The full maintenance log, with every change mapped to its source and branch, is in [`FORK_CHANGES.md`](FORK_CHANGES.md).
 
-### Pulled in from upstream ahead of its release
+## Our own fixes and features
 
-Merged upstream after the 2.5.0 release branch was cut; dropped here once a release carries them.
+### Purge to bin for tool changers
 
-- [OrcaSlicer/OrcaSlicer#14987](https://github.com/OrcaSlicer/OrcaSlicer/pull/14987), [#15544](https://github.com/OrcaSlicer/OrcaSlicer/pull/15544), [#17217](https://github.com/OrcaSlicer/OrcaSlicer/pull/17217), [#17286](https://github.com/OrcaSlicer/OrcaSlicer/pull/17286) — by-object printing: the collision check finds a real print order instead of trusting the object list order, and only counts the part of an object that reaches above the gantry rod.
+Print several materials without a prime tower. After each tool change the new tool:
 
-### Contributed upstream
+1. purges into the printer's purge bin;
+2. waits for its temperature;
+3. wipes on the brush;
+4. goes straight back to the print, so the cleaned nozzle is never parked in between.
+
+Details:
+
+- Purge volumes (regular and first use) and the cooling pause are set per filament.
+- After a pause or a colour change, every tool gets the first-use volume again.
+- The retraction when leaving the bin is a printer setting, with per-filament overrides.
+- A ready template for the Snapmaker U1 is included: *Printer → Machine G-code → Purge to bin G-code*.
+- Turn it on in *Process → Multimaterial*.
+
+### Optional temperature wait after a tool change
+
+Setting: `tool_change_temprature_wait` in *Printer → Multimaterial → Advanced*. The key name is kept from Snapmaker's own Orca so their profiles stay compatible.
+
+It is off on the U1: the U1's change G-code already waits, so the wiped nozzle does not sit and ooze.
+
+### Snapmaker U1 speed override fix
+
+The prime tower forces the speed override to 100% and uses `M220 B` / `M220 R` to save and restore yours. These commands now also run on the U1 (klipper flavor). Before, a speed override you set on the printer was reset to 100% at the first tool change.
+
+### Snapmaker filament sync matches your own presets
+
+When you sync filaments from the printer, Orca now also finds:
+
+- user presets saved from a system preset;
+- vendor-specific presets, including finishes such as SnapSpeed or Silk.
+
+Before, it matched root system presets only.
+
+### Independent fork versioning
+
+- This build reports its own version, `2.5.0-u1-1.0.0`: the upstream base, then the fork's own semver.
+- It checks for updates against [this repo's releases](https://github.com/alternativniy/OrcaSlicer-U1/releases), not upstream's.
+- Profiles for other vendors still update from upstream.
+- The Snapmaker profiles are maintained here. Their version is `99.x`, so upstream updates never replace them.
+
+## Pulled in from upstream ahead of its release
+
+These were merged upstream after the 2.5.0 release branch was cut. They will be dropped here once an upstream release includes them.
+
+- **By-object printing collision check** ([#14987](https://github.com/OrcaSlicer/OrcaSlicer/pull/14987), [#15544](https://github.com/OrcaSlicer/OrcaSlicer/pull/15544), [#17217](https://github.com/OrcaSlicer/OrcaSlicer/pull/17217), [#17286](https://github.com/OrcaSlicer/OrcaSlicer/pull/17286)):
+  - finds a real print order instead of trusting the order of the object list;
+  - only counts the part of an object that reaches above the gantry rod.
+
+## Contributed upstream
 
 - The "No sparse layers" tool change collision fix started in this fork and is part of OrcaSlicer 2.5.0 ([#15441](https://github.com/OrcaSlicer/OrcaSlicer/pull/15441)).
+
+<div align="center">
 
 # Official links and community
 

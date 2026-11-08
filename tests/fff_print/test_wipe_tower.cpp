@@ -288,6 +288,27 @@ TEST_CASE("The wipe tower's toolchange planner flush follows the gcode flavor", 
     }
 }
 
+// Orca(U1): the type2 tower forces M220 S100 before purging. Snapmaker U1 firmware supports
+// M220 B/R on the klipper flavor, so the user's speed override has to be backed up and restored
+// around it; other klipper printers keep getting neither.
+TEST_CASE("The type2 wipe tower restores the speed override on a Snapmaker U1", "[WipeTower]")
+{
+    DynamicPrintConfig config = wipe_tower_toolchange_config("klipper");
+    config.set_deserialize_strict({ { "wipe_tower_type", "type2" } });
+    SECTION("Snapmaker U1") {
+        config.set_deserialize_strict({ { "printer_model", "Snapmaker U1" } });
+        const std::string tower = sliced_wipe_tower(config);
+        CHECK_THAT(tower, Catch::Matchers::ContainsSubstring("M220 B"));
+        CHECK_THAT(tower, Catch::Matchers::ContainsSubstring("M220 R"));
+    }
+    SECTION("other klipper printer") {
+        config.set_deserialize_strict({ { "printer_model", "Voron 2.4" } });
+        const std::string tower = sliced_wipe_tower(config);
+        CHECK_THAT(tower, !Catch::Matchers::ContainsSubstring("M220 B"));
+        CHECK_THAT(tower, !Catch::Matchers::ContainsSubstring("M220 R"));
+    }
+}
+
 TEST_CASE("The wipe tower sets Klipper's acceleration and accel_to_decel on one line", "[WipeTower]")
 {
     // On separate lines, current Klipper finds nothing it reads on the ACCEL_TO_DECEL one and 0.13

@@ -228,6 +228,19 @@ G-code, tool change wait).
   on tool change, generic retraction). Aligning it with the official U1 profiles is a profile design
   decision, left open.
 - Commits: `09aaf46eda`, `4e99dcbc82`.
+- **Alternatives to the version lock** (discussed 2026-11-09, parked; the lock stays for now). Orca can't
+  layer one vendor bundle on another (a machine preset only inherits within its own vendor; the only
+  cross-vendor base is `OrcaFilamentLibrary` for filaments), so any hybrid needs work:
+  - *Upstream the deltas* (preferred long term): the U1 profile fixes (by-object `G90`, `0.4+0.6`, where
+    `tool_change_temprature_wait` lives) as their own PR, purge to bin with its U1 template as another.
+    With no deltas left, drop the 99 version and take upstream's updates like everyone else.
+  - *Overlay in code*: a small fork file of the keys we set, applied over the loaded Snapmaker presets
+    wherever they came from (resources or an OTA bundle). Key-level deltas are easy; the change G-code
+    is one string, so it can only be replaced whole — keep the hash of the upstream value it was based
+    on and skip it with a log warning when upstream's changes. About a day of work, one more fork delta.
+  - *Own update server*: `PROFILE_UPDATE_URL` to a small proxy (Snapmaker → a fork release asset, other
+    vendors → upstream), plus a CI job that re-applies our deltas to upstream's bundle. Needs
+    infrastructure; conflicts still need a human. Too much for this fork.
 
 ## Deferred — may come back
 

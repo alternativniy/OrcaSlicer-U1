@@ -273,11 +273,19 @@ G-code, tool change wait).
 
 ## Verification state of the integrated branch
 
-Release build of `release/v2.5-u1` with all of the above: full `ctest` 2966/2968. Failures:
-`cli_malformed_input` (also fails on plain `v2.5.0`) and, under `-j8` only,
-`Stopping the status stream sends the printer a close frame` (MoonrakerPrinterAgent; passes 5/5 on its
-own, untouched by us). `scripts/run_clang_tidy.sh -b v2.5.0` clean. Profile validator for Snapmaker:
-92 slices OK. Not done: GUI run, real U1 print.
+State on 2026-11-09 (`release/v2.5-u1` with all of the above), Release build:
+- full `ctest`: only `cli_malformed_input` fails (also fails on plain `v2.5.0`). Under `-j8` the
+  MoonrakerPrinterAgent `Stopping the status stream sends the printer a close frame` test has failed at
+  random before (passes on its own, untouched by us).
+- `scripts/run_clang_tidy.sh -b v2.5.0` clean.
+- `scripts/check_profile.sh -v Snapmaker --validator build/src/Release/OrcaSlicer_profile_validator`:
+  `profile_tool`, `version_bump`, `legacy_compat` and `validate_slice` (92 slices) pass. The other
+  validator checks fail only on other vendors' presets that `-v` leaves unloaded (no Snapmaker errors).
+  Rebuild the validator target first and pass `--validator`: the script otherwise picks the first one it
+  finds, possibly a stale build. By-object change G-code checked by slicing with a temporary
+  `printing_by_object_gcode` on the U1 0.4 printer.
+- Real U1: filament sync works. Not yet: a print with purge to bin on the 2.5 build, the
+  `orca-test-repo` CLI suite at the pinned commit.
 
 ## Upstream PR watchlist (state on 2026-11-08)
 

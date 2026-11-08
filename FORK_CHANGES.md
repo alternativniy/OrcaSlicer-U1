@@ -68,7 +68,7 @@ The `fixup!` commits on `port25/u1-m220` and `port25/purge-to-bin` were made aft
 ### 1. Fork identity — own versioning and update checks (2.4 #6)
 
 - `src/libslic3r/AppConfig.cpp` — `VERSION_CHECK_URL` →
-  `api.github.com/repos/alternativniy/OrcaSlicer-U1-Sync/releases/latest`. `PROFILE_UPDATE_URL` stays on
+  `api.github.com/repos/alternativniy/OrcaSlicer-U1/releases/latest`. `PROFILE_UPDATE_URL` stays on
   upstream: other vendors' profiles keep coming from upstream. The Snapmaker bundle is kept out of
   reach by its version instead, see change 8.
 - `src/slic3r/GUI/GUI_App.cpp` `check_new_version_sf()` — the version regex accepts dot-separated

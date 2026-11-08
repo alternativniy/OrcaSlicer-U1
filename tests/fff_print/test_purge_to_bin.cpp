@@ -25,13 +25,13 @@ namespace {
 // Infill on the second filament gives a tool change on every layer. One nozzle keeps the test away from
 // the multi-nozzle filament grouping, set_extruder() still runs a regular tool change. Purge to bin is for
 // tool changers, not for single extruder MM.
+// multifilament_config() sizes the per-filament arrays, including the filament config slots that variant and
+// override arrays are read through.
 DynamicPrintConfig two_filament_config(bool prime_tower)
 {
-    DynamicPrintConfig config = DynamicPrintConfig::full_print_config();
+    DynamicPrintConfig config = multifilament_config(2);
     config.set_deserialize_strict({
         { "single_extruder_multi_material", 0 },
-        { "filament_diameter",         "1.75,1.75" },
-        { "filament_colour",           "#FF0000;#00FF00" },
         { "flush_volumes_matrix",      "0,100,100,0" },
         { "sparse_infill_filament_id", 2 },
         { "sparse_infill_density",     "20%" },

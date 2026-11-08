@@ -11576,7 +11576,7 @@ std::string GCode::purge_to_bin(int old_filament_id, unsigned int new_filament_i
     // back what was retracted.
     std::ostringstream tag;
     tag.imbue(std::locale::classic());
-    tag << ";" << GCodeProcessor::External_Purge_Tag << " " << std::fixed << std::setprecision(6) << volume / area << "\n";
+    tag << "; EXTERNAL_PURGE " << std::fixed << std::setprecision(6) << volume / area << "\n";
     gcode += tag.str();
     // The template left the nozzle retracted by depart_retract, the deretraction on the print gives back depart_retract + restart_extra.
     // Folded into the retracted length: a restart extra of its own would be overwritten by the retraction before the travel.

@@ -58,7 +58,9 @@ using namespace nlohmann;
 
 namespace Slic3r {
 
-static const std::string VERSION_CHECK_URL = "https://check-version.orcaslicer.com/latest";
+// Orca(U1): the fork checks for updates against its own GitHub releases, not upstream's feed.
+// PROFILE_UPDATE_URL stays on upstream on purpose: system profiles still come from upstream.
+static const std::string VERSION_CHECK_URL = "https://api.github.com/repos/alternativniy/OrcaSlicer-U1-Sync/releases/latest";
 static const std::string PROFILE_UPDATE_URL = "https://check-version.orcaslicer.com/profile";
 
 constexpr const char* CONFIG_ORCA_UPDATER_URL = "orca_updater_url";

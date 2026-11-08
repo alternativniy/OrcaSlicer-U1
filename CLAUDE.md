@@ -1,6 +1,6 @@
 @AGENTS.md
 
-## This fork (OrcaSlicer-U1-Sync)
+## This fork (OrcaSlicer-U1)
 
 Not upstream OrcaSlicer: a fork for the Snapmaker U1. Every change that is not upstream's is listed in
 `FORK_CHANGES.md` — read it before porting, merging upstream, or touching a listed change.

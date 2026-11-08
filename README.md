@@ -13,7 +13,7 @@ Optimize your prints with ultra-fast slicing, intelligent support generation, an
 
 # About this fork
 
-This is [OrcaSlicer-U1-Sync](https://github.com/alternativniy/OrcaSlicer-U1-Sync), a fork of upstream [OrcaSlicer/OrcaSlicer](https://github.com/OrcaSlicer/OrcaSlicer) 2.5.0 focused on the Snapmaker U1 tool changer: our own fixes and features not (yet) upstream, plus upstream fixes pulled in ahead of their release. See [`FORK_CHANGES.md`](FORK_CHANGES.md) for the maintenance log (every change mapped to its source and branch); this section is the short version.
+This is [OrcaSlicer-U1](https://github.com/alternativniy/OrcaSlicer-U1), a fork of upstream [OrcaSlicer/OrcaSlicer](https://github.com/OrcaSlicer/OrcaSlicer) 2.5.0 focused on the Snapmaker U1 tool changer: our own fixes and features not (yet) upstream, plus upstream fixes pulled in ahead of their release. See [`FORK_CHANGES.md`](FORK_CHANGES.md) for the maintenance log (every change mapped to its source and branch); this section is the short version.
 
 ### Our own fixes and features
 
@@ -21,7 +21,7 @@ This is [OrcaSlicer-U1-Sync](https://github.com/alternativniy/OrcaSlicer-U1-Sync
 - **Optional temperature wait after a tool change** (`tool_change_temprature_wait`, Printer → Multimaterial → Advanced; key name kept from Snapmaker's own Orca for profile compatibility). Off on the U1, whose change G-code already waits, so the wiped nozzle doesn't sit and ooze.
 - **Snapmaker U1 speed-override fix.** `M220 B`/`M220 R` (save/restore the feedrate override around the prime tower's forced 100%) now also fires on the U1's klipper flavor — without it, a user-set speed override was reset to 100% at the first tool change.
 - **Snapmaker filament sync matches your own presets.** Syncing filaments from the printer finds user presets saved from a system one and vendor-specific presets, including finishes like SnapSpeed or Silk, instead of only root system presets.
-- **Independent fork versioning.** This build reports its own version (`2.5.0-u1-1.0.0`: upstream base + our own semver) and checks for updates against [this repo's releases](https://github.com/alternativniy/OrcaSlicer-U1-Sync/releases) instead of upstream's. Profile updates still come from upstream.
+- **Independent fork versioning.** This build reports its own version (`2.5.0-u1-1.0.0`: upstream base + our own semver) and checks for updates against [this repo's releases](https://github.com/alternativniy/OrcaSlicer-U1/releases) instead of upstream's. Profile updates for other vendors still come from upstream; the Snapmaker bundle is maintained here (version `99.x`, so upstream updates never replace it).
 
 ### Pulled in from upstream ahead of its release
 

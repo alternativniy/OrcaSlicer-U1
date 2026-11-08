@@ -463,7 +463,82 @@ it generates G-code); a separate wait-temperature option (that's #14); a purge t
   `Print::m_isBBLPrinter` is never initialized (upstream bug; the #1 tests don't set it). Not caused by
   this merge. Tool change sequence checked on real U1 profile values; printed on U1 with PETG. Not
   tested on other printers or PLA/ABS yet.
-- Our own feature, no upstream PR.
+- Our own feature, no upstream PR (yet, see "Port to 2.5.0" below).
+
+#### Port to 2.5.0 — TODO (researched 2026-10-31 … 2026-11-08, not started)
+
+Plan agreed with the user: port #15 onto stable 2.5.0 in the fork first, fix everything on the 2.5
+branch, and only then consider an upstream PR. Notes below are for whoever does the port.
+
+**Base.** Tag `v2.5.0` (`40ecc66f78`, 2026-11-07) lives on `upstream/release/v2.5.0`, **not** on
+`upstream/main`. Remote `upstream` = `https://github.com/OrcaSlicer/OrcaSlicer.git` was added for this.
+Bring over only the commits listed above (`a317c07f5c` … `652dfa683a` on `feature/purge-to-bin`) plus
+#14, never merge `release/v2.4-u1` into the new branch. Re-apply by hand where it doesn't cherry-pick:
+`GCode.cpp` moved a lot.
+
+**Code changes 2.4 → 2.5.0, checked against the tag:**
+- `GCode::set_extruder()` (`GCode.cpp:10990` at `v2.5.0`) gained `bool defer_temp_wait` and a toolchange
+  position sync. The tail is now: `post_toolchange()` (only `if (m_ooze_prevention.enable &&
+  !defer_temp_wait)`) → `set_filament_pressure_advance(new_filament_id, imex_pem_tool_for(...))` →
+  `m_last_pos_defined = false` → `synchronize_toolchange_position(*position_before_toolchange, gcode)`.
+  Put `purge_to_bin()` **after PA and before `m_last_pos_defined = false` / the position sync**, so
+  the sync parses the XY the template left. `defer_temp_wait` is set only for the wipe tower, and
+  purge to bin needs the tower off, so the two shouldn't meet. Still worth an assert or a test.
+- **Filament-indexed config arrays now go through `get_filament_config_index()`.** `set_extruder()`
+  reads `m_config.<filament key>.get_at(new_fi)` with `size_t new_fi =
+  get_filament_config_index((int)new_filament_id)` (it can change per layer). Our `purge_to_bin()`
+  reads every filament key with `get_at(new_filament_id)`: `filament_purge_bin_volume`,
+  `filament_purge_bin_first_volume`, `filament_purge_bin_dwell`, `retraction_length`,
+  `purge_bin_depart_retract`, `purge_bin_restart_extra`, `filament_max_volumetric_speed`. All of them
+  have to move to the config index. The first-use set (`m_purge_bin_used_filaments`) stays keyed by
+  the filament id.
+- `OozePrevention::post_toolchange()` (`GCode.cpp:516`) is unchanged: #14 ports as-is. Upstream
+  2.5.0 has no `tool_change_temprature_wait`, `purge_to_bin` or `toolchange_prime` key.
+- `; EXTERNAL_PURGE` (`GCodeProcessor::External_Purge_Tag`) and `;_FORCE_RESUME_FAN_SPEED`
+  (`CoolingBuffer`) still exist. `placeholder_parser_process()` signature unchanged, `m_layer_index` still there.
+- Filament toolchange retraction keys (`filament_retract_length_toolchange`, `…_restart_extra_toolchange`)
+  are in upstream's `Tab.cpp` now. Re-check #3 before porting #15 next to it: the old merge conflict
+  was in that override-key list.
+- Test pitfalls: `Print::m_isBBLPrinter` is initialized (`= false`) in 2.5.0, so that pitfall is gone.
+  Test configs still default to `single_extruder_multi_material`. Set it explicitly, and keep comparing
+  only the tool change commands.
+
+**Profiles.** Upstream `Snapmaker.json` is at `02.04.00.20` in 2.5.0, ours at `02.04.00.14` → the port
+bumps to the next version after upstream's. Re-check `fdm_U1.json`, `Snapmaker U1 (0.4 nozzle).json`
+change G-code (upstream touched U1 profiles a lot), the TPU filament overrides, and sync
+`build/package/resources`.
+
+**Add during the port — full purge after a pause** (a gap found by comparing with upstream PR #16934):
+a tool parked across a pause cooled down for an unknown time, but now gets the regular volume.
+After a pause or colour change (`CustomGCode::PausePrint` / `ColorChange`, around `GCode.cpp:5714`
+at `v2.5.0`; #16934 also scans custom G-code for `PAUSE`, `M600`, `M0`, `M1`, `M25`), the next
+purge of every tool should use `filament_purge_bin_first_volume`: clear `m_purge_bin_used_filaments`,
+then re-insert the active tool. Add a test case. Credit #16934 in the PR description for the idea;
+it's not their code.
+
+**Decided against, don't re-research:**
+- **As a 2.5 plugin.** The 2.5 Python plugins (`src/slic3r/plugin/`) have no seam inside G-code
+  generation. The only fit is `SlicingPipeline` at `psGCodePostProcess`, a text post-processor that
+  runs after `GCodeProcessor`, only on export/upload. On non-BBL printers the preview isn't reloaded,
+  so purges are missing from preview, time and filament stats. Plugin settings are one JSON (global or
+  print preset override), not per filament, and there's no `validate()` or GUI gating.
+- **Asking upstream for a tool-change plugin seam in 2.5.0.** New plugin API, too late in the cycle.
+  2.6 material at best, via an issue first.
+- **On-printer purge timing** (#16934's `SMART_TOOLCHANGE_PRIME` macro). It needs Snapmaker/u1-klipper#21,
+  but that repo only gets Snapmaker's own release drops: one external PR merged (April 2026), and
+  issue #18 (M106/M107 not synced with motion, the reason for our `M400`) never got a reply.
+
+**Before an upstream PR** (later, only after the 2.5 branch is stable):
+- Check #16934 first (watchlist). If it merged, our PR becomes a change on top of `toolchange_prime_*`
+  or has to argue for replacing it.
+- The PR description must compare the two approaches. Ours: per-filament mm³ volumes, depart
+  retraction with filament overrides, writer state set in code (theirs keys on a `"restore retraction"`
+  comment in the template), fan/E-mode/feedrate restore, no `GCodeProcessor` rewriting, printed on
+  U1. Theirs: idle-time step sizing (we skipped it: U1 idle tools sit ~150 °C colder), pause handling
+  (we're adding it).
+- Strip the hand-edited `OrcaSlicer_ru.po` entries (upstream has its own translation flow). Ship #14
+  with it or as its own PR (keep the `temprature` spelling, see #14). Include the U1 profile and the
+  `Snapmaker.json` bump.
 
 ## Not fork changes (verified, left alone)
 
@@ -487,6 +562,12 @@ reconciled against it.
 **Already taken** (see changes #9-#13 above) — #15483, #15349, #15482, #14987, #15544, #14400.
 Removed from this watchlist; will need reconciling (drop our local commit, don't double-apply) once
 each actually merges upstream and we rebase past it.
+
+**Competing with our own work, do not take:**
+- [#16934](https://github.com/OrcaSlicer/OrcaSlicer/pull/16934) — "Prime tool changes into a purge
+  bucket, sized by idle time" (abehrman), same feature as our #15, for U1 too; port of
+  Snapmaker/OrcaSlicer#1107. Open, no reviews, CI red as of 2026-11-08, last update 2026-11-03.
+  Compared in #15 → "Port to 2.5.0". Re-check before the port and before opening our PR.
 
 **Large/active, do not take yet — architecture still moving:**
 - [#15145](https://github.com/OrcaSlicer/OrcaSlicer/pull/15145) — U1 filament inventory management,

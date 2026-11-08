@@ -1841,6 +1841,15 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBool,                wipe_tower_no_sparse_layers))
     ((ConfigOptionBool,                wipe_tower_sparse_layers_combination))
     ((ConfigOptionString,              change_filament_gcode))
+    // Orca: purge to bin, tool changer purge into the printer's bin instead of the prime tower.
+    ((ConfigOptionBool,                purge_to_bin))
+    ((ConfigOptionFloats,              filament_purge_bin_first_volume))
+    ((ConfigOptionPercent,             purge_bin_speed_ratio))
+    ((ConfigOptionFloats,              filament_purge_bin_volume))
+    ((ConfigOptionFloats,              filament_purge_bin_dwell))
+    ((ConfigOptionFloats,              purge_bin_depart_retract))
+    ((ConfigOptionFloats,              purge_bin_restart_extra))
+    ((ConfigOptionString,              purge_bin_gcode))
     ((ConfigOptionString,              change_extrusion_role_gcode))
     ((ConfigOptionString,              process_change_extrusion_role_gcode))
     ((ConfigOptionStrings,             filament_change_extrusion_role_gcode))
@@ -2184,6 +2193,15 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
 
 
 )
+
+// Orca: tool changes purge into the printer's purge bin, see GCode::purge_to_bin(). Not for single extruder MM:
+// the retraction left by the purge is tracked per filament, not per shared extruder. Not with firmware retraction:
+// G11 would restore the firmware retraction length, not the long retraction the purge leaves.
+inline bool purge_to_bin_enabled(const PrintConfig &config)
+{
+    return config.purge_to_bin && !config.enable_prime_tower && !config.single_extruder_multi_material &&
+           !config.use_firmware_retraction && !config.purge_bin_gcode.value.empty();
+}
 
 // This object is mapped to Perl as Slic3r::Config::Full.
 PRINT_CONFIG_CLASS_DERIVED_DEFINE0(

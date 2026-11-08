@@ -310,6 +310,9 @@ public:
     // extra_retract forwards a PETG pre-extrusion over-extrusion; default 0 -> identical to the plain deretract.
     std::string     unretract(float extra_retract = 0.f) { return m_writer.unlift() + m_writer.unretract(extra_retract); }
     std::string     set_extruder(unsigned int extruder_id, double print_z, bool by_object=false, int toolchange_temp_override = -1, bool defer_temp_wait = false);
+    std::string     purge_to_bin(int old_filament_id, unsigned int new_filament_id, int new_filament_temp, double print_z, bool first_use);
+    // Orca: after a pause every parked tool cooled for an unknown time: its next purge to bin uses the first purge volume.
+    void            purge_bin_reset_used_filaments(unsigned int active_filament_id);
     // Sets the pressure advance of the filament's extruder variant, if enabled for it.
     // tool addresses one IMEX carriage explicitly. -1 means no carriage: it omits the tool
     // qualifier on Klipper, Marlin and BBL, and keeps RepRapFirmware's historical `D0`, since a
@@ -936,6 +939,8 @@ protected:
     double   m_sub_layer_height     = 0.0;
     bool m_need_change_layer_lift_z = false;
     int m_start_gcode_filament = -1;
+    // Filaments already used in this print, for filament_purge_bin_first_volume.
+    std::set<unsigned int> m_purge_bin_used_filaments;
     std::string m_filament_instances_code;
 
     // Object layer id of the layer being generated; keys the per-filament config-slot

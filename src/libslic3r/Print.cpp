@@ -376,6 +376,14 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "machine_start_gcode",
         "filament_start_gcode",
         "change_filament_gcode",
+        "purge_to_bin",
+        "purge_bin_speed_ratio",
+        "filament_purge_bin_volume",
+        "filament_purge_bin_first_volume",
+        "filament_purge_bin_dwell",
+        "purge_bin_depart_retract",
+        "purge_bin_restart_extra",
+        "purge_bin_gcode",
         "wipe",
         // BBS
         "wipe_distance",
@@ -3001,6 +3009,13 @@ StringObjectException Print::validate(std::vector<StringObjectException> *warnin
     }
     if (!this->has_same_shrinkage_compensations())
         warn(L("Filament shrinkage will not be used because filament shrinkage for the used filaments does not match."));
+    // Orca: purge to bin is checked but can't run (the process checkbox stays enabled while checked, see ConfigManipulation).
+    if (m_config.purge_to_bin && !m_config.enable_prime_tower && extruders.size() > 1) {
+        if (m_config.use_firmware_retraction)
+            warn(L("Purge to bin is not supported with firmware retraction. No purge will be done."), "purge_to_bin");
+        else if (m_config.purge_bin_gcode.value.empty())
+            warn(L("Purge to bin is enabled, but the printer's \"Purge to bin G-code\" is empty. No purge will be done."), "purge_to_bin");
+    }
     return {};
 }
 

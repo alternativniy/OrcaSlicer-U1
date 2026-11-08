@@ -3,6 +3,12 @@
 	"name": "fdm_filament_tpu",
 	"inherits": "fdm_filament_common",
 	"from": "system",
+	"filament_purge_bin_depart_retract": [
+		"2"
+	],
+	"filament_purge_bin_restart_extra": [
+		"0"
+	],
 	"instantiation": "false",
 	"hot_plate_temp": [
 		"40"

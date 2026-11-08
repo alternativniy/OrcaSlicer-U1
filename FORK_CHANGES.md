@@ -23,6 +23,29 @@ Re-run on every branch below after a rebase and diff against this file.
 Rules: never merge `release/v2.4-u1` (or any integration branch) into a topic branch — bring single
 commits with `git cherry-pick -x`, or re-apply by hand with `(ported from <hash>)` in the message.
 
+## How to port a change to a new upstream base
+
+Port each change by its intent, not by its code. Copying the code over and patching what breaks
+reproduces the old base's assumptions on the new one: the 2.5 port of change 5 re-tied the filament sync
+to `filament_id`, the very thing its 2.4 design had moved away from, and the first fix only patched a
+symptom. For every change, before writing code:
+1. **History.** Read its section here and in the previous base's `FORK_CHANGES.md`, then every commit
+   behind it, follow-up fixes included (`git log`, commit messages). Write down the problem it solves,
+   what each follow-up corrected and why, and what was decided against.
+2. **The new base.** Check how upstream now handles the same problem: changed code and defaults in that
+   area (`git log <old tag>..<new tag> -- <files>`), its design docs (`docs/HLSD/`), related upstream PRs,
+   merged and open. The change may be upstream already, partly obsolete, or at odds with upstream's
+   current design.
+3. **Assumptions.** Check that what the change relies on still holds: config indexing, call order,
+   defaults, which code path a printer actually takes (e.g. wipe tower type), firmware behaviour
+   (U1 firmware dump: `/home/alternativ/Test/config/lava`).
+4. **Profiles.** Check a profile delta against every preset that inherits it, not only the one it was
+   made for (`tool_change_temprature_wait` in `fdm_U1.json` broke `0.4+0.6`, which has no change G-code).
+   Compare with Snapmaker's own Orca fork (`github.com/Snapmaker/OrcaSlicer`, latest tag) for U1
+   profile and firmware conventions.
+5. **Adapt, then verify.** Re-implement the intent on the new base's terms, with a test that fails
+   without the change. Record in this file what changed from the previous base and why.
+
 ## Branch map
 
 | Branch | Change |

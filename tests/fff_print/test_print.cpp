@@ -1698,6 +1698,43 @@ TEST_CASE("Sequential printing counts a raft toward the height checked against t
     CHECK(error.find("too tall") != std::string::npos);
 }
 
+TEST_CASE("Sequential printing counts a raft toward whether an object is short", "[Print]")
+{
+    // Objects below nozzle_height only need to clear the nozzle cone, so they may stand close together,
+    // and their skirt is kept at its full distance. A raft lifts a 2 mm slab past the 2.5 mm nozzle_height,
+    // so the slabs need the toolhead radius between them and the skirt offset of a tall object.
+    const bool raft = GENERATE(false, true);
+    std::vector<TriangleMesh> meshes;
+    for (size_t i = 0; i < 2; ++i) {
+        TriangleMesh slab = make_cube(20, 20, 2);
+        slab.translate(float(80 + 30 * i), 80.f, 0.f); // 10 mm apart, within the 40 mm toolhead radius
+        meshes.push_back(std::move(slab));
+    }
+    DynamicPrintConfig config = DynamicPrintConfig::full_print_config();
+    config.set_deserialize_strict({
+        { "print_sequence",            "by object" },
+        { "nozzle_height",             2.5 },
+        { "extruder_clearance_radius", 40 },
+        { "skirt_loops",               1 },
+        { "skirt_type",                "perobject" },
+        { "raft_layers",               raft ? 3 : 0 },
+        { "layer_change_gcode",        "G92 E0\n" } // validate() relative-E reset
+    });
+    Print print;
+    Model model;
+    Test::init_print(std::move(meshes), print, model, config, nullptr, /*arrange=*/false);
+    REQUIRE((2. + print.objects().front()->slicing_parameters().object_print_z_min > 2.5) == raft);
+
+    CHECK(print.is_all_objects_are_short() == ! raft);
+    CHECK((std::get<0>(print.object_skirt_offset()) > 0.f) == ! raft);
+    const std::string error = print.validate().string;
+    INFO(error);
+    if (raft)
+        CHECK(error.find("too close to others") != std::string::npos);
+    else
+        CHECK(error.empty());
+}
+
 TEST_CASE("Sequential printing measures objects on a belt printer by the model's top", "[Print][belt]")
 {
     // On a belt printer object_print_z_max is the height in the tilted slicing frame: at 45 degrees a 30 mm

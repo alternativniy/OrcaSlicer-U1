@@ -269,18 +269,19 @@ bool SnapmakerPrinterAgent::fetch_filament_info(std::string dev_id, FilamentSync
                 std::string   name_hint = sub_type_name_hint(trim_and_upper(safe_at(filament_sub_type, i, empty_str)));
                 const Preset* match = find_closest_color_preset_by_vendor_and_type(bundle->filaments, vendor, tray.tray_type,
                                                                                     tray.tray_color, name_hint);
-                if (match) {
-                    // The id only tags the tray (e.g. for change detection); the preset itself goes by
-                    // name through get_refined_filament_preset(), so a match without an id still counts.
-                    tray.tray_info_idx = match->filament_id.empty() ? bundle->filaments.filament_id_by_type(tray.tray_type)
-                                                                    : match->filament_id;
-                    BOOST_LOG_TRIVIAL(warning) << "Filament sync: Found manufacturer-specific profile for slot " << i << ": "
-                                               << match->name;
-                    m_refined_filament_matches[i] = match->name;
-                } else {
+                // The id only tags the tray (e.g. for change detection); a matched preset itself goes by
+                // name through get_refined_filament_preset(), so a match without an id still counts.
+                if (match && !match->filament_id.empty())
+                    tray.tray_info_idx = match->filament_id;
+                else {
                     tray.tray_info_idx = bundle->filaments.filament_id_by_type(tray.tray_type);
                     if (tray.tray_info_idx.empty())
                         tray.tray_info_idx = map_filament_type_to_generic_id(tray.tray_type);
+                }
+                if (match) {
+                    BOOST_LOG_TRIVIAL(warning) << "Filament sync: Found manufacturer-specific profile for slot " << i << ": "
+                                               << match->name;
+                    m_refined_filament_matches[i] = match->name;
                 }
             } else {
                 tray.tray_info_idx = map_filament_type_to_generic_id(tray.tray_type);

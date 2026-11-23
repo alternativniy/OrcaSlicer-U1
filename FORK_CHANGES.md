@@ -1,11 +1,12 @@
 # Fork Changes
 
-Everything in this repo that is **not** upstream OrcaSlicer/OrcaSlicer 2.5.0 — what to re-check or
+Everything in this repo that is **not** upstream OrcaSlicer/OrcaSlicer 2.5.2 — what to re-check or
 re-apply when moving to a newer upstream base. A maintenance checklist, not a user changelog.
 
-`release/v2.5-u1` is the integration branch. It starts at tag `v2.5.0` (`40ecc66f78`, on
-`upstream/release/v2.5.0`, not on `upstream/main`). The 2.4 line and its history live on
-`release/v2.4-u1`; its `FORK_CHANGES.md` has the background of every change ported from there
+`release/v2.5-u1` is the integration branch. It started at tag `v2.5.0` (`40ecc66f78`, on
+`upstream/release/v2.5.0`, not on `upstream/main`) and was moved to tag `v2.5.2` (`f92a7c065c`, on
+`upstream/release/v2.5.2`) by merging the tag (branch `sync/v2.5.2`); the topic branches below still
+start at `v2.5.0`. The 2.4 line and its history live on `release/v2.4-u1`; its `FORK_CHANGES.md` has the background of every change ported from there
 (`git show release/v2.4-u1:FORK_CHANGES.md`). Change numbers in brackets, e.g. (2.4 #15), refer to it.
 
 ## How this list was built
@@ -72,11 +73,11 @@ The `fixup!` commits on `port25/u1-m220` and `port25/purge-to-bin` were made aft
   upstream: other vendors' profiles keep coming from upstream. The Snapmaker bundle is kept out of
   reach by its version instead, see change 8.
 - `src/slic3r/GUI/GUI_App.cpp` `check_new_version_sf()` — the version regex accepts dot-separated
-  identifiers with embedded hyphens (`2.5.0-u1-1.0.0`). New in 2.5: upstream appends an updater query
+  identifiers with embedded hyphens (`2.5.2-u1-1.0.0`). New in 2.5: upstream appends an updater query
   (installation id, OS info) and may sign it (`X-Orca-Sig`); both are now sent only when the URL is
   upstream's `check-version.orcaslicer.com`, not to GitHub. A single-release response
   (`releases/latest`) is parsed by upstream's code as is.
-- `version.inc` — `SoftFever_VERSION` `2.5.0-u1-1.0.0`: upstream base, then the fork's own semver. The
+- `version.inc` — `SoftFever_VERSION` `2.5.2-u1-1.0.0`: upstream base, then the fork's own semver. The
   fork semver restarts at `1.0.0` on every new upstream base. Bump it only when the current version is
   already tagged (`git tag --list "v*u1*"`).
 - Commit: `098ebf96e4` (ported from `85c6e7a3e9`).
@@ -87,9 +88,11 @@ The `fixup!` commits on `port25/u1-m220` and `port25/purge-to-bin` were made aft
 checkout named OrcaSlicer; now `${{ github.workspace }}`. It went missing once in a 2.4 merge — grep the
 file for `/__w/` after every upstream merge.
 - Commit: `6795b28c52` (ported from `f98502faef`).
-- `build_orca.yml` CLI tests: `orca-test-repo` is pinned to `4674f68bbc78` (2026-10-26), its state at
-  the v2.5.0 base. The test repo follows upstream main; on the 2.4 base its HEAD broke the fork's CI on
-  version drift (`2d7fb76e6d`). **Re-pin on every new upstream base.** Commit `441e76c043`.
+- `build_orca.yml` CLI tests: `orca-test-repo` is pinned to `fa771896bb22` (2026-11-12), its state at
+  the v2.5.2 base: the v2.5.0 pin `4674f68bbc78` plus the #17439 case marked fixed; later commits only
+  refresh the CLI surface snapshot from upstream main. The test repo follows upstream main; on the 2.4
+  base its HEAD broke the fork's CI on version drift (`2d7fb76e6d`). **Re-pin on every new upstream
+  base.** Commits `441e76c043`, `e10756e945`.
 
 ### 3. Snapmaker U1 speed override restored after the wipe tower purge (2.4 #8)
 
@@ -107,15 +110,23 @@ as Snapmaker's own Orca fork; U1 firmware handles `M220 B/R` in `gcode_move.py`)
 
 ### 4. By-object collision check from upstream main (2.4 #12)
 
-Merged upstream after the 2.5.0 branch was cut, so not in `v2.5.0`. Cherry-picked from `upstream/main`:
+Merged upstream after the 2.5.0 branch was cut, so not in `v2.5.0` nor `v2.5.2`. Cherry-picked from
+`upstream/main`:
 - `a7833dd69b` ← `a30ca5e54a` #14987 — print tall objects later when the list order would collide.
 - `4e67815be2` ← `8cdc68a6a0` #17217 — keep copies of one object in list order. Test conflict with 2.5's
   own by-layer test (#17232); both tests kept.
 - `fb1035c1d9` ← `05a92cd0cf` #15544 — only the part of an object above the rod can collide with it.
 - `e7de759993` ← `719fdcf4dd` #17286 — keep rotated copies in list order.
+- `e959da8041` ← `d0ca537ebe` #17235 — by-object order, too-tall and rod checks measure an object's top
+  above the bed, raft and Z shrinkage included. Its copy of the #17217 test already was on the branch.
+- `8e9b734ede` ← `7243d15ea2` #17445 — the same for `is_all_objects_are_short()` and the compacted tower
+  clearance (new `PrintObject::print_z_max()`). Its two "No sparse layers" raft tests need helpers from
+  #16999 (in 2.5.2, not in the branch's v2.5.0 base), so they were added after the 2.5.2 merge
+  (`b5a32cf70c`).
 
-**Drop all four** once the upstream base includes them (2.5.1 / 2.6). Before that, check
-`git log 719fdcf4dd..upstream/main -- src/libslic3r/Print.cpp` for further follow-ups.
+**Drop all six** once the upstream base includes them (2.6). Before that, check
+`git log 7243d15ea2..upstream/main -- src/libslic3r/Print.cpp` for further follow-ups (last checked
+2026-11-23).
 
 ### 5. Snapmaker filament sync matches user and vendor presets (2.4 #2)
 
@@ -141,8 +152,12 @@ preset again. User presets saved from a system one never matched.
 - Upstream bug fixed on the way: user presets loaded from the cloud inherited the parent's
   `filament_id` only when the cloud sent `"null"`, not when it sent an empty value. `Preset.cpp` now
   inherits on empty too (`4faaaa8faa`). The sync does not depend on it. Candidate for an upstream PR.
+- 2.5.2: upstream #17089 made `filament_id_by_type()` return an empty id when no visible preset has
+  the type (it returned any visible preset); agents fall back to the OrcaFilamentLibrary generic id.
+  A matched preset without a `filament_id` now takes the same fallback for the tray tag
+  (`7ef8e951e7`).
 - Commits: `7126c51171` (ported from `c8cf1ab792`, `2628f52da5`), `4faaaa8faa`, `cc14d67a17`,
-  `6d679a5180`. Checked on a real U1 (2026-11-09).
+  `6d679a5180`, `7ef8e951e7`. Checked on a real U1 (2026-11-09).
 - **Fork-only, not for an upstream PR in this form.** Upstream's design (`docs/HLSD/filament_id.md`): the
   agent hands a `filament_id` to the shared matcher, which resolves it to a root preset; agents are meant
   to converge on that. SoftFever removed a per-preset (`setting_id`) path in `20388f846d`, and 2.5's
@@ -213,17 +228,18 @@ seam in 2.5.0, on-printer purge timing (needs Snapmaker/u1-klipper changes that 
 `dev` version keep them off). An upstream Snapmaker bundle with a higher version would be offered as a
 configuration update and, if accepted, replace the fork's U1 profiles (purge to bin template, change
 G-code, tool change wait).
-- `Snapmaker.json` `version` is `99.00.00.01`: the app folds a four-part version into
+- `Snapmaker.json` `version` is `99.00.00.02`: the app folds a four-part version into
   `major.minor.(patch*100+build)` and compares that, so major 99 is out of upstream's reach; the rest
   counts the fork's profile releases. Bump the last component on every fork profile change.
 - **On every upstream merge or sync: diff upstream's `resources/profiles/Snapmaker*` against ours and merge
   their changes in by hand**, keeping the fork's deltas (changes 6, 7, this section). Last synced with
-  upstream `02.04.00.20` (v2.5.0). The same rule is in `CLAUDE.md`.
+  upstream `02.04.00.22` (v2.5.2). The same rule is in `CLAUDE.md`.
 - Fork deltas in the U1 profiles besides 6 and 7 (`09aaf46eda`):
   - change G-code, print by object: the lift is absolute (`G90`, default `max_print_height`), as in
     Snapmaker's 20261003 change G-code; upstream's 20260607 sends the absolute height as a relative move.
-  - `0.4+0.6`: `extruder_clearance_height_to_rod` 27.5 / `extruder_clearance_radius` 72.5 like the other U1
-    printers (upstream #15544 measured the rod); it inherited 36 / 65.
+  - `0.4+0.6` rod clearance: no longer a delta. Upstream #17276 (2.5.2) put the clearance on `fdm_U1`
+    (height 26, distance 41.2, radius 72.5, from Snapmaker's CAD); our 27.5 / 72.5 override on
+    `0.4+0.6` was removed (`d152495b99`), so it inherits them like the other U1 printers.
 - Not done: `0.4+0.6` is a different profile line on `fdm_U1` (own `PRINT_START`, no change G-code, no Z lift
   on tool change, generic retraction). Aligning it with the official U1 profiles is a profile design
   decision, left open.
@@ -267,17 +283,19 @@ G-code, tool change wait).
   `retract_length_toolchange` 2 for toolchanger printers, the TPU override was a no-op on U1.
 - U1 bed temps 100 °C (2.4 #9) — #15483 in 2.5.0. U1 filename filament (2.4 #10) — #15349 in 2.5.0.
 - Snapmaker `filament_vendor` on type bases (2.4 #11) — PR #15482 closed, fixed in `WebGuideDialog.cpp`.
+- U1 `0.4+0.6` rod clearance (fork delta from `09aaf46eda`) — upstream #17276 in 2.5.2, on `fdm_U1`.
 - CI backports (NSIS retry #15768, Win ARM64 CMake 4.3 #16052, Flatpak deps cache #15501) — in 2.5.0.
-  The `orca-test-repo` pin (`2d7fb76e6d`) was for the 2.4.2 base; if CLI CI fails on version drift,
-  pin to the test-repo commit matching 2.5.0.
 
 ## Verification state of the integrated branch
 
-State on 2026-11-09 (`release/v2.5-u1` with all of the above), Release build:
-- full `ctest`: only `cli_malformed_input` fails (also fails on plain `v2.5.0`). Under `-j8` the
-  MoonrakerPrinterAgent `Stopping the status stream sends the printer a close frame` test has failed at
-  random before (passes on its own, untouched by us).
-- `scripts/run_clang_tidy.sh -b v2.5.0` clean.
+State on 2026-11-23 (`release/v2.5-u1` on the v2.5.2 base, with all of the above), Release build:
+- full `ctest` (3090 tests, `-j8`): all pass, `cli_malformed_input` included. Locale and Python binding
+  tests skip on this machine. On 2.5.0 the MoonrakerPrinterAgent `Stopping the status stream sends the
+  printer a close frame` test failed at random under `-j8` (upstream #17210 in 2.5.1 addresses it).
+- `scripts/run_clang_tidy.sh -b v2.5.2` clean.
+- Building on 2.5.2 needs expat ≥ 2.10.0 (#17290): rebuild the deps (`dep_OCCT-prefix` had to be removed
+  first, its sources still carried the old patch), then clear the cached system expat from `build/` and
+  `build-tidy/` (`cmake -U 'EXPAT_*' -U 'pkgcfg_lib_PC_EXPAT*' <dir>`).
 - `scripts/check_profile.sh -v Snapmaker --validator build/src/Release/OrcaSlicer_profile_validator`:
   `profile_tool`, `version_bump`, `legacy_compat` and `validate_slice` (92 slices) pass. The other
   validator checks fail only on other vendors' presets that `-v` leaves unloaded (no Snapmaker errors).
@@ -290,7 +308,7 @@ State on 2026-11-09 (`release/v2.5-u1` with all of the above), Release build:
 ## Upstream PR watchlist (state on 2026-11-08)
 
 Re-check before touching the same code (`gh pr view <n> --repo OrcaSlicer/OrcaSlicer --json state,mergedAt`).
-- Taken early from `upstream/main`: #14987, #15544, #17217, #17286 (change 4).
+- Taken early from `upstream/main`: #14987, #15544, #17217, #17286, #17235, #17445 (change 4).
 - Deferred: #14400 (nozzle picker).
 - Competing with change 7, don't take: #16934 (purge bucket sized by idle time), open.
 - Same code as change 5, don't take yet: #12232, #15145 (+ stacked PRs), #15278 (sub-type in name, same

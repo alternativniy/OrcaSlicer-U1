@@ -15,7 +15,7 @@ Optimize your prints with ultra-fast slicing, intelligent support generation, an
 
 # About this fork
 
-**[OrcaSlicer-U1](https://github.com/alternativniy/OrcaSlicer-U1)** is a fork of [OrcaSlicer/OrcaSlicer](https://github.com/OrcaSlicer/OrcaSlicer) 2.5.0 for the **Snapmaker U1** tool changer. It adds:
+**[OrcaSlicer-U1](https://github.com/alternativniy/OrcaSlicer-U1)** is a fork of [OrcaSlicer/OrcaSlicer](https://github.com/OrcaSlicer/OrcaSlicer) 2.5.2 for the **Snapmaker U1** tool changer. It adds:
 
 - our own fixes and features that are not (yet) upstream;
 - upstream fixes pulled in ahead of their release.
@@ -62,18 +62,19 @@ Before, it matched root system presets only.
 
 ### Independent fork versioning
 
-- This build reports its own version, `2.5.0-u1-1.0.0`: the upstream base, then the fork's own semver.
+- This build reports its own version, `2.5.2-u1-1.0.0`: the upstream base, then the fork's own semver.
 - It checks for updates against [this repo's releases](https://github.com/alternativniy/OrcaSlicer-U1/releases), not upstream's.
 - Profiles for other vendors still update from upstream.
 - The Snapmaker profiles are maintained here. Their version is `99.x`, so upstream updates never replace them.
 
 ## Pulled in from upstream ahead of its release
 
-These were merged upstream after the 2.5.0 release branch was cut. They will be dropped here once an upstream release includes them.
+These were merged upstream after the 2.5.0 release branch was cut, so 2.5.2 does not have them either. They will be dropped here once an upstream release includes them.
 
-- **By-object printing collision check** ([#14987](https://github.com/OrcaSlicer/OrcaSlicer/pull/14987), [#15544](https://github.com/OrcaSlicer/OrcaSlicer/pull/15544), [#17217](https://github.com/OrcaSlicer/OrcaSlicer/pull/17217), [#17286](https://github.com/OrcaSlicer/OrcaSlicer/pull/17286)):
+- **By-object printing collision check** ([#14987](https://github.com/OrcaSlicer/OrcaSlicer/pull/14987), [#15544](https://github.com/OrcaSlicer/OrcaSlicer/pull/15544), [#17217](https://github.com/OrcaSlicer/OrcaSlicer/pull/17217), [#17286](https://github.com/OrcaSlicer/OrcaSlicer/pull/17286), [#17235](https://github.com/OrcaSlicer/OrcaSlicer/pull/17235), [#17445](https://github.com/OrcaSlicer/OrcaSlicer/pull/17445)):
   - finds a real print order instead of trusting the order of the object list;
-  - only counts the part of an object that reaches above the gantry rod.
+  - only counts the part of an object that reaches above the gantry rod;
+  - measures an object by its top above the bed, so a raft counts toward its height.
 
 ## Contributed upstream
 

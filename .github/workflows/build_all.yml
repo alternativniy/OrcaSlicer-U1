@@ -521,3 +521,23 @@ jobs:
     with:
       os: ubuntu-24.04-arm
       artifact: ${{ github.sha }}-flatpak-tests-aarch64
+  # Orca(U1): the repository's 10 GB cache budget holds one set of caches for the branch being built.
+  # Every run saves new ccache entries, so after a build drop the older ones, and the caches of other
+  # branches. Fork only: upstream keeps its own cache policy.
+  prune_caches:
+    name: Prune stale caches
+    needs: [build_linux, build_windows, build_macos_arch, flatpak]
+    if: ${{ !cancelled() && !vars.SELF_HOSTED && github.repository != 'OrcaSlicer/OrcaSlicer' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts/ci_prune_caches.py
+          sparse-checkout-cone-mode: false
+      - name: Delete the caches the next build does not use
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -I scripts/ci_prune_caches.py

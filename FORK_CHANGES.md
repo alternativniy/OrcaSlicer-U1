@@ -59,6 +59,7 @@ symptom. For every change, before writing code:
 | `port25/purge-to-bin` | 6, 7 |
 | `port25/u1-profiles` | 8 (and profile fixes of 6) |
 | `port25/ci-test-pin` | 2 (test repo pin) |
+| `port25/ci-cache-prune` | 9 |
 | `port25/docs` | README, this file, `CLAUDE.md` fork section |
 
 The `fixup!` commits on `port25/u1-m220` and `port25/purge-to-bin` were made after the first merge
@@ -257,6 +258,24 @@ G-code, tool change wait).
   - *Own update server*: `PROFILE_UPDATE_URL` to a small proxy (Snapmaker → a fork release asset, other
     vendors → upstream), plus a CI job that re-applies our deltas to upstream's bundle. Needs
     infrastructure; conflicts still need a human. Too much for this fork.
+
+### 9. CI keeps one set of caches for the branch being built
+
+The repository's Actions cache is capped at 10 GB. Every run saves new ccache entries
+(`ccache-<leg>-<run id>-<attempt>`, ~6.5 GB per run with Flatpak), so the deps caches (~0.9 GB for all six
+platforms) were evicted by LRU while a rerun of one failed job was waiting for a macOS runner, and
+`Build OrcaSlicer` then failed with `fail-on-cache-miss` (run 45571901034). Rerunning only the failed jobs
+cannot rebuild deps; use *Re-run all jobs* or a new dispatch.
+- `scripts/ci_prune_caches.py` + job `prune_caches` at the end of `build_all.yml`: on the ref being built it
+  deletes every cache but the newest of its family (ccache per leg, deps per platform, `flatpak-builder` per
+  arch); it deletes the caches of other branches except the default branch's (they serve a new branch as a
+  fallback; switch the default branch to the new major version and the old one gets pruned on the next
+  run). Pull request, tag and unrecognised caches (`get-cmake-*`, `nsis-*`) are left alone. Only on forks,
+  on push and dispatch, never on schedule or self-hosted. `--dry-run` lists without deleting; unit test in
+  `scripts/test_ci_prune_caches.py` (`cd scripts && python3 -m unittest test_ci_prune_caches`).
+- Not enough alone: one set is already 10.07 GiB (Flatpak 6.8, other ccache 3.3) plus ~0.9 GiB of deps, and
+  new entries land before the prune runs, so LRU still evicts during a run. Capping the Flatpak ccache
+  (`max_size=3G` in `build_all.yml`; the entries are 1.6 GB each) is the next lever.
 
 ## Deferred — may come back
 

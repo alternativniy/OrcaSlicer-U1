@@ -273,9 +273,11 @@ cannot rebuild deps; use *Re-run all jobs* or a new dispatch.
   run). Pull request, tag and unrecognised caches (`get-cmake-*`, `nsis-*`) are left alone. Only on forks,
   on push and dispatch, never on schedule or self-hosted. `--dry-run` lists without deleting; unit test in
   `scripts/test_ci_prune_caches.py` (`cd scripts && python3 -m unittest test_ci_prune_caches`).
-- Not enough alone: one set is already 10.07 GiB (Flatpak 6.8, other ccache 3.3) plus ~0.9 GiB of deps, and
-  new entries land before the prune runs, so LRU still evicts during a run. Capping the Flatpak ccache
-  (`max_size=3G` in `build_all.yml`; the entries are 1.6 GB each) is the next lever.
+- Not enough alone: one set was 10.07 GiB (Flatpak 6.8, other ccache 3.3) plus ~0.9 GiB of deps, and new
+  entries land before the prune runs, so LRU can still evict during a run. Hence the Flatpak ccache is
+  capped at `max_size=1G` (was 3G; its entries were 1.6 GB each), which should take ~1.2 GB off a set. Cost:
+  a Flatpak rebuild of the OrcaSlicer module may miss more. Check `gh cache list` after a full run and
+  lower the other legs' ccache (`max-size: 3G` in `build_orca.yml`) if the set is still near 10 GiB.
 
 ## Deferred — may come back
 
